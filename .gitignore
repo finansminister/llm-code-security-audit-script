@@ -1,0 +1,26 @@
+# --- Security & Secrets ---
+.env
+__pycache__/
+*.py[cod]
+
+# --- Research Data (Ignore the "Noise") ---
+# We ignore these because they are recreated every run
+# and can contain thousands of files.
+
+llm-generated-outputs/
+codeql-databases/
+analysis-results/
+temp-tests/
+session-logs/
+
+# --- Environment ---
+.venv/
+env/
+
+# --- OS Specific ---
+.DS_Store
+Thumbs.db
+
+# --- Exceptions (DO Track These) ---
+!requirements.txt
+!master_hashes.json
