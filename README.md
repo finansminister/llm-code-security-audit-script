@@ -5,9 +5,14 @@ This repository contains the orchestration framework for a comparative security 
 
 ## Project Structure
 * `main.py`: Primary orchestration script.
+
 * `utils.py`: Utility functions for sanitization, parsing, and statistics.
+
 * `config.py`: Centralized configuration manifest; defines the SourceCode directory map, API parameters (temperature, max tokens), and dataset pathing.
+
 * `master_hashes.json`: Cryptographic fingerprints of the source code.
+
 * `/session-logs`: Automated repository for all experimental artifacts, including per-session terminal outputs, API request logs, and CodeQL SARIF reports.
   * Organized by timestamp (e.g., session-logs-YYYYMMDD_HHMMSS), ensuring a persistent and auditable record of every run.
+
 * `/seceval-dataset`: Local storage for the security-focused prompt dataset (JSONL format), serving as the foundational input for the LLM code generation audit.
