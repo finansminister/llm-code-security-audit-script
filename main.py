@@ -1,23 +1,3 @@
-"""
-A Comparative Semantic Audit of Python Code Generation using CodeQL and SecurityEval
-
-This script orchestrates a batch-processing workflow that:
-
-1. Iterates through a dataset of security-focused prompts.
-
-2. Calls various LLM APIs with controlled parameters.
-    2a. Current LLMs: Gemini, Anthropic, Mistral
-
-3. Sanitizes and saves the generated Python code in individual executable .py files.
-    3a. .py files are stored in /llm-generated-outputs.
-
-4. A JSON log is created detailing performance and usage metadata for research analysis.
-
-5. Initializes and executes CodeQL static analysis on the outputs and creates a SARIF report on the findings.
-
-6. The SARIF report is parsed and results are displayed in the terminal along with the results of an Anova and T-test.
-"""
-
 import json
 import random
 import re
