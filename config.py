@@ -13,10 +13,10 @@ class Directories:
     CODEQL_DATABASE_DIR = ROOT / "codeql-database"
     RESULTS_DIR = ROOT / "analysis-results"
     OUTPUT_DIR = ROOT / "llm-generated-outputs"
-    DATASET_DIR = ROOT / "secevaldataset"
+    DATASET_DIR = ROOT / "seceval-dataset"
     RESOURCES_DIR = ROOT / "resources"
     DESCRIPTIVE_DIR = ROOT / "decriptive"
-    SESSION_DIR = ROOT / "session_logs"
+    SESSION_DIR = ROOT / "session-logs"
 
     SARIF_DIR = RESULTS_DIR / "sarif-reports"
     CSV_AUDITS_DIR = RESULTS_DIR / "audit-results"
