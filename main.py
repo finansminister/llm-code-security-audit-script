@@ -209,6 +209,39 @@ def integrity_validation():
         sys.exit(1)
 
 
+def end_of_process_integrity(final_hashes_metadata, start_hashes_metadata):
+    potential_drifts = {
+        "Unauthorized files added during process": final_hashes_metadata[
+            "current_files"
+        ]
+        - start_hashes_metadata["current_files"],
+        "Files removed during process": start_hashes_metadata["current_files"]
+        - final_hashes_metadata["current_files"],
+        "Files changed during process": [
+            file
+            for file in start_hashes_metadata["live_hashes"]
+            if start_hashes_metadata["live_hashes"][file]
+            != final_hashes_metadata["live_hashes"][file]
+        ],
+    }
+
+    current_drifts = {label: data for label, data in potential_drifts.items() if data}
+
+    if not current_drifts:
+        frozen_date = start_hashes_metadata.get("master_hashes_date", "N/A")
+        print(f"SUCCESS: System integrity verified against Master ({frozen_date}).")
+        print("Outcome: No source code drift during orchestration.")
+
+    else:
+        print("CRITICAL FAILURE: Source code drift detected during session!")
+
+        for label, data in current_drifts.items():
+            print(f"\n{label}: {data}")
+
+        print("=" * 60 + "\n")
+        sys.exit(1)
+
+
 def environment_setup():
     start_hashes_metadata = integrity_validation()
 
@@ -272,14 +305,10 @@ def orchestration(session_jsonl_log_path, final_audit_results):
     print("=== FINAL SYSTEM STATE VALIDATION ===")
 
     final_hashes_metadata = integrity_validation()
-    if start_hashes_metadata == final_hashes_metadata:
-        frozen_date = start_hashes_metadata.get("frozen_hashes_date", "N/A")
-        print(f"SUCCESS: System integrity verified against Master ({frozen_date}).")
-        print("Outcome: No source code drift during orchestration.")
-    else:
-        print("CRITICAL FAILURE: Source code drift detected during session!")
-        sys.exit(1)
+    end_of_process_integrity(final_hashes_metadata, start_hashes_metadata)
+
     print("=" * 60 + "\n")
+
     if stats:
         run_statistics(stats, final_audit_results)
 

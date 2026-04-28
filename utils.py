@@ -59,17 +59,24 @@ class Tee:
         self.log.close()
 
 
-def unauthorized_files_check(source_code_files):
+def current_files(source_code_files):
     authorized_py_files = {path.name for path in source_code_files}
     current_py_files = {file.name for file in Path(".").glob("*.py")}
 
     unauthorized_files = current_py_files - authorized_py_files
+    missing_files = authorized_py_files - current_py_files
 
     if unauthorized_files:
-        print(f"CRITICAL: Unauthorized scripts detected in root: {unauthorized_files}")
+        print(
+            f"CRITICAL: Unauthorized script(s) detected in root: {unauthorized_files}"
+        )
         sys.exit(1)
 
-    print("No unauthorized files were found.")
+    if missing_files:
+        print(f"CRITICAL: Missing source code file(s): {missing_files}")
+        sys.exit(1)
+
+    print("Inventory Validation Successful: 0 Unauthorized files, 0 Missing files.")
 
     return current_py_files
 
@@ -88,10 +95,6 @@ def current_hash_values(source_code_files, master_hashes_path):
     frozen_hashes_date = master_hashes.get("date", "unknown")
 
     for file in source_code_files:
-        if not file.exists():
-            print(f"CRITICAL ERROR: {file} is MISSING.")
-            sys.exit(1)
-
         sha256_hash = hashlib.sha256()
         with open(file, "rb") as f:
             for byte_block in iter(lambda: f.read(4096), b""):
@@ -117,7 +120,7 @@ def current_hash_values(source_code_files, master_hashes_path):
 
 
 def orchestration_integrity_check(source_code_files: list, master_hashes_path: Path):
-    current_py_files = unauthorized_files_check(source_code_files)
+    current_py_files = current_files(source_code_files)
     live_hashes, frozen_hashes_date = current_hash_values(
         source_code_files, master_hashes_path
     )
