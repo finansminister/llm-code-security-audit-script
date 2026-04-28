@@ -191,25 +191,25 @@ def integrity_validation():
 
 
 def end_of_process_integrity(final_hashes_metadata, start_hashes_metadata):
+
+    final_files = final_hashes_metadata["current_files"]
+    final_hashes = final_hashes_metadata["live_hashes"]
+
+    start_files = start_hashes_metadata["current_files"]
+    start_hashes = start_hashes_metadata["live_hashes"]
+
     potential_drifts = {
-        "Unauthorized files added during process": final_hashes_metadata[
-            "current_files"
-        ]
-        - start_hashes_metadata["current_files"],
-        "Files removed during process": start_hashes_metadata["current_files"]
-        - final_hashes_metadata["current_files"],
+        "Unauthorized files added during process": final_files - start_files,
+        "Files removed during process": start_files - final_files,
         "Files changed during process": [
-            file
-            for file in start_hashes_metadata["live_hashes"]
-            if start_hashes_metadata["live_hashes"][file]
-            != final_hashes_metadata["live_hashes"][file]
+            hash for hash in start_hashes if start_hashes[hash] != final_hashes[hash]
         ],
     }
 
     current_drifts = {label: data for label, data in potential_drifts.items() if data}
 
     if not current_drifts:
-        frozen_date = start_hashes_metadata.get("master_hashes_date", "N/A")
+        frozen_date = start_hashes_metadata["master_hashes_date"]
         print(f"SUCCESS: System integrity verified against Master ({frozen_date}).")
         print("Outcome: No source code drift during orchestration.")
 
