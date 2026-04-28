@@ -4,28 +4,6 @@ import sys
 from pathlib import Path
 
 
-def current_files(source_code_files):
-    authorized_py_files = {path.name for path in source_code_files}
-    current_py_files = {file.name for file in Path(".").glob("*.py")}
-
-    unauthorized_files = current_py_files - authorized_py_files
-    missing_files = authorized_py_files - current_py_files
-
-    if unauthorized_files:
-        print(
-            f"CRITICAL: Unauthorized script(s) detected in root: {unauthorized_files}"
-        )
-        sys.exit(1)
-
-    if missing_files:
-        print(f"CRITICAL: Missing source code file(s): {missing_files}")
-        sys.exit(1)
-
-    print("Inventory Validation Successful: 0 Unauthorized files, 0 Missing files.")
-
-    return current_py_files
-
-
 def end_of_process_integrity(final_metadata, start_metadata):
     validate_integrity(
         start_metadata["live_hashes"],
@@ -114,6 +92,28 @@ def current_hash_values(source_code_files, master_hashes_path):
             )
             sys.exit(1)
     return live_hashes, frozen_hashes_date
+
+
+def current_files(source_code_files):
+    authorized_py_files = {path.name for path in source_code_files}
+    current_py_files = {file.name for file in Path(".").glob("*.py")}
+
+    unauthorized_files = current_py_files - authorized_py_files
+    missing_files = authorized_py_files - current_py_files
+
+    if unauthorized_files:
+        print(
+            f"CRITICAL: Unauthorized script(s) detected in root: {unauthorized_files}"
+        )
+        sys.exit(1)
+
+    if missing_files:
+        print(f"CRITICAL: Missing source code file(s): {missing_files}")
+        sys.exit(1)
+
+    print("Inventory Validation Successful: 0 Unauthorized files, 0 Missing files.")
+
+    return current_py_files
 
 
 def orchestration_integrity_check(source_code_files: list, master_hashes_path: Path):
