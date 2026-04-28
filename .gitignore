@@ -12,6 +12,7 @@ codeql-databases/
 analysis-results/
 temp-tests/
 session-logs/
+descriptive/
 
 # --- Environment ---
 .venv/

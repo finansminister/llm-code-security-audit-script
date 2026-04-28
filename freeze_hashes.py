@@ -15,7 +15,7 @@ def freeze_current_hashes():
         Path("descriptive_data.py"),
     ]
 
-    master_hashes = {}
+    master_hashes = {"date": time.strftime("%Y-%m-%d %H:%M:%S")}
 
     for file in source_code_files:
         sha256_hash = hashlib.sha256()
@@ -25,7 +25,6 @@ def freeze_current_hashes():
                 sha256_hash.update(byte_block)
         master_hashes[file.name] = sha256_hash.hexdigest()
 
-    master_hashes["date"] = time.strftime("%Y%m%d_%H%M%S")
     with open("master_hashes.json", "w") as file:
         json.dump(master_hashes, file, indent=4)
 

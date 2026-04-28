@@ -70,6 +70,7 @@ def orchestration_integrity_check(source_code_files: list, master_hashes_path: P
             master_hashes = json.load(file)
 
     frozen_hashes_date = master_hashes.get("date", "unknown")
+
     for file in source_code_files:
         if not file.exists():
             print(f"CRITICAL ERROR: {file} is MISSING.")
