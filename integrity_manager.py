@@ -116,7 +116,7 @@ def current_files(source_code_files):
     return current_py_files
 
 
-def orchestration_integrity_check(source_code_files: list, master_hashes_path: Path):
+def orchestration_metadata(source_code_files: list, master_hashes_path: Path):
     current_py_files = current_files(source_code_files)
     live_hashes, frozen_hashes_date = current_hash_values(
         source_code_files, master_hashes_path
