@@ -12,7 +12,7 @@ import pandas as pd
 from alive_progress import alive_bar
 from dotenv import load_dotenv
 
-from audit_manager import log_attempt, sanitize_code, sarif_parser
+from audit_manager import Tee, log_attempt, sanitize_code, sarif_parser
 from codeql_manager import codeql_analysis, codeql_init
 from config import Directories, LLMConfig
 from descriptive_data import audit_stats, cwe_per_owasp
@@ -27,26 +27,6 @@ from llm_api_manager import (
 )
 from owasp_manager import load_owasp_dict
 from stat_generation import anova_test
-
-
-class Tee:
-    def __init__(self, filename):
-        self.terminal = sys.stdout
-        self.log = open(filename, "w", encoding="utf-8")
-
-    def write(self, message):
-        self.terminal.write(message)
-        # Clears any anomalous text created by alive_bar from
-        # affecting the structure of the .txt log
-        clean_message = message.replace("\r", "\n" if "\r" in message else message)
-        self.log.write(clean_message)
-
-    def flush(self):
-        self.terminal.flush()
-        self.log.flush()
-
-    def close(self):
-        self.log.close()
 
 
 def main_api_call(
