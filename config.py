@@ -48,11 +48,13 @@ class SourceCode:
 
     MAIN_PATH = ROOT / "main.py"
     CONFIG_PATH = ROOT / "config.py"
-    UTILITY_PATH = ROOT / "utils.py"
+    INTEGRITY_MGR_PATH = ROOT / "integrity_manager.py"
     CODEQL_MGR_PATH = ROOT / "codeql_manager.py"
     OWASP_MGR_PATH = ROOT / "owasp_manager.py"
     LLM_API_MGR_PATH = ROOT / "llm_api_manager.py"
+    AUDIT_MGR_PATH = ROOT / "audit_manager.py"
     DESCRIPTIVE_DATA_PATH = ROOT / "descriptive_data.py"
+    STAT_GEN_PATH = ROOT / "stat_generation.py"
     FREEZE_HASHES_PATH = ROOT / "freeze_hashes.py"
 
     @classmethod

@@ -1,3 +1,4 @@
+import hashlib
 import json
 import random
 import re
@@ -5,15 +6,19 @@ import shutil
 import sys
 import time
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 import pandas as pd
 from alive_progress import alive_bar
 from dotenv import load_dotenv
 
+from audit_manager import Tee, log_attempt, sanitize_code, sarif_parser
 from codeql_manager import codeql_analysis, codeql_init
 from config import Directories, LLMConfig
 from descriptive_data import audit_stats, cwe_per_owasp
+
+# In main.py
+from integrity_manager import end_of_process_integrity, llm_output_integrity
 from llm_api_manager import (
     anthropic_api_call,
     gemini_api_call,
@@ -21,7 +26,7 @@ from llm_api_manager import (
     mistral_api_call,
 )
 from owasp_manager import load_owasp_dict
-from utils import Tee, anova_test, log_attempt, sanitize_code, sarif_parser
+from stat_generation import anova_test
 
 
 def main_api_call(
@@ -29,7 +34,7 @@ def main_api_call(
     cwe_id: str,
     output_path: Path,
     **kwargs: Any,
-) -> None:
+) -> Optional[str]:
 
     initial_delay, max_retries = 2, 5
     start_time = time.perf_counter()
@@ -60,7 +65,9 @@ def main_api_call(
                 file.write(clean_code)
 
             log_attempt(**log_data, status="SUCCESS")
-            return
+            file_hash = hashlib.sha256(clean_code.encode("utf-8")).hexdigest()
+
+            return file_hash
         except Exception as e:
             # Error 429 (Too Many Requests / Resource Exhausted)
             # Error 503 (Service Unavailable / Overloaded)
@@ -78,11 +85,12 @@ def main_api_call(
             else:
                 log_attempt(**log_data, status="FAILED", error_msg=str(e))
                 break
+    return None
 
 
 def code_generation_pipeline(
     model: dict, api_parameters: dict, log_file_name: Path
-) -> None:
+) -> Optional[Path]:
 
     model_name = model["name"]
     api_client = model["client"]
@@ -91,7 +99,9 @@ def code_generation_pipeline(
     model_api_call = model["api_call_func"]
     temperature = api_parameters["temperature"]
     max_tokens = api_parameters["max_tokens"]
+
     prompts = []
+    file_hashes = {}
 
     # DATASET ITERATION AND API CALL
     try:
@@ -124,7 +134,7 @@ def code_generation_pipeline(
                     progress_bar()
                     continue
 
-                main_api_call(
+                file_hash = main_api_call(
                     api_call_func=lambda: model_api_call(
                         api_client,
                         model_id,
@@ -139,14 +149,25 @@ def code_generation_pipeline(
                     output_path=output_file_path,
                     log_file_name=log_file_name,
                 )
+
+                file_hashes[output_file] = file_hash
+
             except json.JSONDecodeError:
                 print(f"Skipping malformed JSON at prompt: {index}")
             except Exception as e:
                 print(f"Error processing line {index}: {e}")
             progress_bar()
-        # Closes the client if the model allows it
-        if hasattr(api_client, "close"):
-            api_client.close()
+
+    output_manifest = log_file_name.parent / f"{model_name}_output_manifest.json"
+    with open(output_manifest, "w", encoding="utf-8") as file:
+        json.dump(file_hashes, file, indent=4)
+    print(f"Output hash manifest saved to: {output_manifest}")
+
+    # Closes the client if the model allows it
+    if hasattr(api_client, "close"):
+        api_client.close()
+
+    return output_manifest
 
 
 def codeql_and_parse(model_name, output_dir, cwe_dict):
@@ -169,7 +190,7 @@ def codeql_and_parse(model_name, output_dir, cwe_dict):
 
 
 # Preliminary integrity check on the off-chance that the utils.py file does not work.
-def integrity_validation():
+def generate_hashes():
     try:
         from config import SourceCode
 
@@ -181,7 +202,7 @@ def integrity_validation():
     master_hashes_path = Path("master_hashes.json")
 
     try:
-        from utils import orchestration_integrity_check
+        from integrity_manager import orchestration_integrity_check
 
         return orchestration_integrity_check(source_code_files, master_hashes_path)
 
@@ -190,41 +211,9 @@ def integrity_validation():
         sys.exit(1)
 
 
-def end_of_process_integrity(final_hashes_metadata, start_hashes_metadata):
-
-    final_files = final_hashes_metadata["current_files"]
-    final_hashes = final_hashes_metadata["live_hashes"]
-
-    start_files = start_hashes_metadata["current_files"]
-    start_hashes = start_hashes_metadata["live_hashes"]
-
-    potential_drifts = {
-        "Unauthorized files added during process": final_files - start_files,
-        "Files removed during process": start_files - final_files,
-        "Files changed during process": [
-            hash for hash in start_hashes if start_hashes[hash] != final_hashes[hash]
-        ],
-    }
-
-    current_drifts = {label: data for label, data in potential_drifts.items() if data}
-
-    if not current_drifts:
-        frozen_date = start_hashes_metadata["master_hashes_date"]
-        print(f"SUCCESS: System integrity verified against Master ({frozen_date}).")
-        print("Outcome: No source code drift during orchestration.")
-
-    else:
-        print("CRITICAL FAILURE: Source code drift detected during session!")
-
-        for label, data in current_drifts.items():
-            print(f"\n{label}: {data}")
-
-        print("=" * 60 + "\n")
-        sys.exit(1)
-
-
 def environment_setup():
-    start_hashes_metadata = integrity_validation()
+
+    start_hashes_metadata = generate_hashes()
 
     if shutil.which("codeql") is None:
         print("CRITICAL ERROR: CodeQL CLI not found in System PATH.")
@@ -266,11 +255,19 @@ def orchestration(session_jsonl_log_path, final_audit_results):
 
     stats = []
     for loop_index, model in enumerate(model_configs, start=1):
-        code_generation_pipeline(model, api_parameters, session_jsonl_log_path)
+        output_manifest = code_generation_pipeline(
+            model, api_parameters, session_jsonl_log_path
+        )
 
         results, report_path = codeql_and_parse(
             model["name"], model["output_dir"], cwe_dict
         )
+
+        if output_manifest is None:
+            print(f"CRITICAL: Pipeline failed for {model['id']}. Skipping analysis.")
+            continue
+
+        llm_output_integrity(output_manifest, model["output_dir"])
 
         if results:
             stats.extend(results)
@@ -285,7 +282,7 @@ def orchestration(session_jsonl_log_path, final_audit_results):
     print("\n" + "=" * 60)
     print("=== FINAL SYSTEM STATE VALIDATION ===")
 
-    final_hashes_metadata = integrity_validation()
+    final_hashes_metadata = generate_hashes()
     end_of_process_integrity(final_hashes_metadata, start_hashes_metadata)
 
     print("=" * 60 + "\n")

@@ -1,11 +1,13 @@
 {
-    "date": "2026-04-28 21:42:58",
+    "date": "2026-04-29 01:07:39",
+    "audit_manager.py": "8ee002e9563e609e2f2156cb2b6af059454e7a043dd0cf92e6626f48e901ea5c",
     "codeql_manager.py": "555bd03660aee9f224af1a711f13157271153668ece754738c151384abc4c637",
-    "config.py": "8482cd0a390f8ff6803fb0650aed61eaff3e617463673f94f73d7f07c8a097a3",
+    "config.py": "6c7b6136e01bb2e91ee7bb14cf961e855af6cde04e9b47b4c556313d4a6af6e6",
     "descriptive_data.py": "2e6651bab8b1601449e1ce7dc1a6df2c3f1ed5da9ebb8450902b5400184d5f86",
     "freeze_hashes.py": "681c1c3cb4ae510fbd61d6c12b362ccd4bb6991d20e58720d4709748171868e8",
+    "integrity_manager.py": "af9120defc0ada5bfd40a43fb7e321c01c6b502c2b5f221c3bf7fc83c23a2fe4",
     "llm_api_manager.py": "7e38452538abc42ce2b91b4510e14094940a0ab9ff81ebeb1f4e10c61e29452f",
-    "main.py": "069881e71e4f9fcb80105e6e6462296aec5c8e30a940be68b64514c99cc40168",
+    "main.py": "feabf6bba5c509157cc2f34dc53eddcba2255b24e701767d68a29621e6183dea",
     "owasp_manager.py": "d80574794c2cde6b7683c92cff9934cb563c57ab26a029ce1688ce0c77933505",
-    "utils.py": "f852747d38d5dce2239f5c54ee4a231759beea37a6ff60d8df9902255188a449"
+    "stat_generation.py": "12c97b0f88908e45dbd225a148c8bad434a1e60cdfb807af02efe61a81010da3"
 }
