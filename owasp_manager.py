@@ -53,7 +53,7 @@ def generate_cwe_dict() -> dict:
                 cwe = re.search(r"cwe-(\d+)", a_tag.text, re.IGNORECASE)
                 if cwe:
                     # Standardizing CWE Codes:
-                    # cwe-22 -> cwe-022
+                    # :03d = cwe-22 -> cwe-022 | cwe-1234 -> cwe-1234
                     # group(0) = cwe-123
                     # group(1) = 123
                     cwe_id = f"cwe-{int(cwe.group(1)):03d}"

@@ -31,10 +31,11 @@ sarif_parser():
     later used in ANOVA tests.
 
 anova_test():
-    TEXT
+    Performs an ANOVA test on data collected from the CodeQL .sarif  report
 
 tukey_hsd():
-    TEXT
+    If the previous function discovers a statistical significant difference between models
+    perform a tukey hsd test to suss out the culprit.
 """
 
 
@@ -45,8 +46,8 @@ class Tee:
 
     def write(self, message):
         self.terminal.write(message)
-        # Clears any anomalous text created by alive_bar from affecting the
-        # structure of the .txt log
+        # Clears any anomalous text created by alive_bar from
+        # affecting the structure of the .txt log
         clean_message = message.replace("\r", "\n" if "\r" in message else message)
         self.log.write(clean_message)
 
@@ -85,14 +86,17 @@ def orchestration_integrity_check(source_code_files: list, master_hashes_path: P
         live_hashes[file.name] = current_hash
 
         if master_hashes and file.name in master_hashes:
-            if sha256_hash.hexdigest() != master_hashes[file.name]:
+            if current_hash != master_hashes[file.name]:
                 print(
-                    f"{file.name} has been modified since {frozen_hashes_date}and does not match up with the master hash file."
+                    f"{file.name} has been modified since {frozen_hashes_date} and does not match up with the master hash file."
                 )
                 print(
                     "Audit aborted due to integrity failure. Reset master hashes or revert changes."
                 )
                 sys.exit(1)
+
+    live_hashes["frozen_hashes_date"] = frozen_hashes_date
+    return live_hashes
 
 
 def sanitize_code(generated_code: str) -> Optional[str]:
@@ -231,7 +235,7 @@ def tukeys_hsd(cwe_tagged_files, tukey_output_path: Path):
     tukey_df.to_csv(tukey_file_name, index=False)
     print("\n--- TUKEY HSD POST-HOC TEST ---")
     print(tukey)
-    print(f"Tukey HSD results saved to: {tukey_output_path}")
+    print(f"Tukey HSD results saved to: {tukey_file_name.name}")
 
 
 def anova_test(csv_audit_file: Path):

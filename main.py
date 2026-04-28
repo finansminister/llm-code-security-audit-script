@@ -188,19 +188,7 @@ def codeql_and_parse(model_name, output_dir, cwe_dict):
 
 
 # Preliminary integrity check on the off-chance that the utils.py file does not work.
-def entry_integrity_check():
-    if not Path("utils.py").exists():
-        print(
-            "CRITICAL ERROR: 'utils.py' is missing. ",
-            "The orchestration script infrastructure is broken.",
-        )
-        sys.exit(1)
-    try:
-        from utils import orchestration_integrity_check
-    except ImportError as e:
-        print(f"CRITICAL ERROR: Failed to load integrity logic from utils.py: {e}")
-        sys.exit(1)
-
+def integrity_validation():
     source_code_files = [
         Path("main.py"),
         Path("utils.py"),
@@ -212,25 +200,30 @@ def entry_integrity_check():
     ]
     master_hashes_path = Path("master_hashes.json")
 
-    orchestration_integrity_check(source_code_files, master_hashes_path)
+    try:
+        from utils import orchestration_integrity_check
+
+        return orchestration_integrity_check(source_code_files, master_hashes_path)
+
+    except ImportError as e:
+        print(f"CRITICAL ERROR: Failed to load integrity logic from utils.py: {e}")
+        sys.exit(1)
 
 
 def environment_setup():
-    entry_integrity_check()
-    # CHECK IF CODEQL IS INSTALLED ON THE SYSTEM
+    start_hashes = integrity_validation()
+
     if shutil.which("codeql") is None:
         print("CRITICAL ERROR: CodeQL CLI not found in System PATH.")
         print("Please install CodeQL or update your PATH variable.")
         sys.exit(1)
 
-    # LOAD PRELIMINARY FUNCTIONS
-    load_dotenv()  # LOAD DATA FROM DOTENV FILE
-    Directories.directories_check()  # CREATE ALL REQUIRED DIRECTORIES
-    return (LLMConfig.get_api_parameters(), get_clients())
+    load_dotenv()
+    Directories.directories_check()
+    return (LLMConfig.get_api_parameters(), get_clients(), start_hashes)
 
 
 def run_statistics(stats, final_audit_results):
-
     dataframe = pd.DataFrame(stats)
     dataframe.to_csv(final_audit_results, index=False)
     print(f"Final dataset saved to {final_audit_results.name}")
@@ -246,7 +239,7 @@ def run_statistics(stats, final_audit_results):
 
 
 def orchestration(session_jsonl_log_path, final_audit_results):
-    api_parameters, client = environment_setup()
+    api_parameters, client, start_hashes = environment_setup()
     cwe_dict = load_owasp_dict(Directories.OWASP_MAP_PATH)
     cwe_per_owasp(cwe_dict, "OWASP_2025_Mapping", session_jsonl_log_path.parent)
     # Api Call Functions
@@ -275,6 +268,19 @@ def orchestration(session_jsonl_log_path, final_audit_results):
         print("=" * 50)
 
     print("\n*** ALL MODELS PROCESSED - PROCESS FINISHED ***\n")
+
+    print("\n" + "=" * 60)
+    print("=== FINAL SYSTEM STATE VALIDATION ===")
+
+    final_hashes = integrity_validation()
+    if start_hashes == final_hashes:
+        frozen_date = start_hashes.get("frozen_hashes_date", "N/A")
+        print(f"SUCCESS: System integrity verified against Master ({frozen_date}).")
+        print("Outcome: Source code drift was 0.0% during orchestration.")
+    else:
+        print("CRITICAL FAILURE: Source code drift detected during session!")
+        sys.exit(1)
+    print("=" * 60 + "\n")
     if stats:
         run_statistics(stats, final_audit_results)
 
