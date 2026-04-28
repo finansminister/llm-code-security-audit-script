@@ -64,11 +64,12 @@ def orchestration_integrity_check(source_code_files: list, master_hashes_path: P
         print(
             "WARNING: No master .json hashes file found. Proceeding without version validation."
         )
-        master_hashes = None
+        master_hashes = {}
     else:
         with open(master_hashes_path, "r") as file:
             master_hashes = json.load(file)
 
+    frozen_hashes_date = master_hashes.get("date", "unknown")
     for file in source_code_files:
         if not file.exists():
             print(f"CRITICAL ERROR: {file} is MISSING.")
@@ -79,15 +80,16 @@ def orchestration_integrity_check(source_code_files: list, master_hashes_path: P
             for byte_block in iter(lambda: f.read(4096), b""):
                 sha256_hash.update(byte_block)
 
-        live_hashes[file.name] = sha256_hash.hexdigest()
+        current_hash = sha256_hash.hexdigest()
+        live_hashes[file.name] = current_hash
 
         if master_hashes and file.name in master_hashes:
             if sha256_hash.hexdigest() != master_hashes[file.name]:
                 print(
-                    f"{file.name} has been modified and does not match up with the master hash file."
+                    f"{file.name} has been modified since {frozen_hashes_date}and does not match up with the master hash file."
                 )
                 print(
-                    "Audit aborted due to integrity failure. Reset Golden Master or revert changes."
+                    "Audit aborted due to integrity failure. Reset master hashes or revert changes."
                 )
                 sys.exit(1)
 

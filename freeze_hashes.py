@@ -1,5 +1,6 @@
 import hashlib
 import json
+import time
 from pathlib import Path
 
 
@@ -24,6 +25,7 @@ def freeze_current_hashes():
                 sha256_hash.update(byte_block)
         master_hashes[file.name] = sha256_hash.hexdigest()
 
+    master_hashes["date"] = time.strftime("%Y%m%d_%H%M%S")
     with open("master_hashes.json", "w") as file:
         json.dump(master_hashes, file, indent=4)
 

@@ -221,7 +221,7 @@ def environment_setup():
     if shutil.which("codeql") is None:
         print("CRITICAL ERROR: CodeQL CLI not found in System PATH.")
         print("Please install CodeQL or update your PATH variable.")
-        exit()
+        sys.exit(1)
 
     # LOAD PRELIMINARY FUNCTIONS
     load_dotenv()  # LOAD DATA FROM DOTENV FILE
