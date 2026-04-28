@@ -15,7 +15,7 @@ class Directories:
     OUTPUT_DIR = ROOT / "llm-generated-outputs"
     DATASET_DIR = ROOT / "secevaldataset"
     RESOURCES_DIR = ROOT / "resources"
-    DESCRIPTIVE_DATA_DIR = ROOT / "decriptive"
+    DESCRIPTIVE_DIR = ROOT / "decriptive"
     SESSION_DIR = ROOT / "session_logs"
 
     SARIF_DIR = RESULTS_DIR / "sarif-reports"
@@ -41,6 +41,28 @@ class Directories:
                 print(f"Created directory:      {directory}")
             else:
                 print(f"Verified directory:     {directory}")
+
+
+class SourceCode:
+    ROOT = Directories.ROOT
+
+    MAIN_PATH = ROOT / "main.py"
+    CONFIG_PATH = ROOT / "config.py"
+    UTILITY_PATH = ROOT / "utils.py"
+    CODEQL_MGR_PATH = ROOT / "codeql_manager.py"
+    OWASP_MGR_PATH = ROOT / "owasp_manager.py"
+    LLM_API_MGR_PATH = ROOT / "llm_api_manager.py"
+    DESCRIPTIVE_DATA_PATH = ROOT / "descriptive_data.py"
+    FREEZE_HASHES_PATH = ROOT / "freeze_hashes.py"
+
+    @classmethod
+    def source_code_check(cls):
+        source_files = [
+            getattr(cls, path)
+            for path in dir(cls)
+            if isinstance(getattr(cls, path), Path) and path.endswith("_PATH")
+        ]
+        return source_files
 
 
 class LLMConfig:

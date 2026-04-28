@@ -1,19 +1,12 @@
 import hashlib
 import json
 import time
-from pathlib import Path
+
+from config import SourceCode
 
 
 def freeze_current_hashes():
-    source_code_files = [
-        Path("main.py"),
-        Path("utils.py"),
-        Path("config.py"),
-        Path("codeql_manager.py"),
-        Path("llm_api_manager.py"),
-        Path("owasp_manager.py"),
-        Path("descriptive_data.py"),
-    ]
+    source_code_files = SourceCode.source_code_check()
 
     master_hashes = {"date": time.strftime("%Y-%m-%d %H:%M:%S")}
 

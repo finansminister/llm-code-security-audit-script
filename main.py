@@ -189,15 +189,14 @@ def codeql_and_parse(model_name, output_dir, cwe_dict):
 
 # Preliminary integrity check on the off-chance that the utils.py file does not work.
 def integrity_validation():
-    source_code_files = [
-        Path("main.py"),
-        Path("utils.py"),
-        Path("config.py"),
-        Path("codeql_manager.py"),
-        Path("llm_api_manager.py"),
-        Path("owasp_manager.py"),
-        Path("descriptive_data.py"),
-    ]
+    try:
+        from config import SourceCode
+
+        source_code_files = SourceCode.source_code_check()
+    except ImportError as e:
+        print(f"CRITICAL ERROR: Failed to load config.py: {e}")
+        sys.exit(1)
+
     master_hashes_path = Path("master_hashes.json")
 
     try:
@@ -206,12 +205,12 @@ def integrity_validation():
         return orchestration_integrity_check(source_code_files, master_hashes_path)
 
     except ImportError as e:
-        print(f"CRITICAL ERROR: Failed to load integrity logic from utils.py: {e}")
+        print(f"CRITICAL ERROR: Failed to load utils.py: {e}")
         sys.exit(1)
 
 
 def environment_setup():
-    start_hashes = integrity_validation()
+    start_hashes_metadata = integrity_validation()
 
     if shutil.which("codeql") is None:
         print("CRITICAL ERROR: CodeQL CLI not found in System PATH.")
@@ -220,7 +219,7 @@ def environment_setup():
 
     load_dotenv()
     Directories.directories_check()
-    return (LLMConfig.get_api_parameters(), get_clients(), start_hashes)
+    return (LLMConfig.get_api_parameters(), get_clients(), start_hashes_metadata)
 
 
 def run_statistics(stats, final_audit_results):
@@ -239,7 +238,7 @@ def run_statistics(stats, final_audit_results):
 
 
 def orchestration(session_jsonl_log_path, final_audit_results):
-    api_parameters, client, start_hashes = environment_setup()
+    api_parameters, client, start_hashes_metadata = environment_setup()
     cwe_dict = load_owasp_dict(Directories.OWASP_MAP_PATH)
     cwe_per_owasp(cwe_dict, "OWASP_2025_Mapping", session_jsonl_log_path.parent)
     # Api Call Functions
@@ -272,11 +271,11 @@ def orchestration(session_jsonl_log_path, final_audit_results):
     print("\n" + "=" * 60)
     print("=== FINAL SYSTEM STATE VALIDATION ===")
 
-    final_hashes = integrity_validation()
-    if start_hashes == final_hashes:
-        frozen_date = start_hashes.get("frozen_hashes_date", "N/A")
+    final_hashes_metadata = integrity_validation()
+    if start_hashes_metadata == final_hashes_metadata:
+        frozen_date = start_hashes_metadata.get("frozen_hashes_date", "N/A")
         print(f"SUCCESS: System integrity verified against Master ({frozen_date}).")
-        print("Outcome: Source code drift was 0.0% during orchestration.")
+        print("Outcome: No source code drift during orchestration.")
     else:
         print("CRITICAL FAILURE: Source code drift detected during session!")
         sys.exit(1)

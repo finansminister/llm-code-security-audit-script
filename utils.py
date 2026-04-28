@@ -59,7 +59,22 @@ class Tee:
         self.log.close()
 
 
-def orchestration_integrity_check(source_code_files: list, master_hashes_path: Path):
+def unauthorized_files_check(source_code_files):
+    authorized_py_files = {path.name for path in source_code_files}
+    current_py_files = {file.name for file in Path(".").glob("*.py")}
+
+    unauthorized_files = current_py_files - authorized_py_files
+
+    if unauthorized_files:
+        print(f"CRITICAL: Unauthorized scripts detected in root: {unauthorized_files}")
+        sys.exit(1)
+
+    print("No unauthorized files were found.")
+
+    return current_py_files
+
+
+def current_hash_values(source_code_files, master_hashes_path):
     live_hashes = {}
     if not master_hashes_path.exists():
         print(
@@ -85,18 +100,33 @@ def orchestration_integrity_check(source_code_files: list, master_hashes_path: P
         current_hash = sha256_hash.hexdigest()
         live_hashes[file.name] = current_hash
 
-        if master_hashes and file.name in master_hashes:
-            if current_hash != master_hashes[file.name]:
-                print(
-                    f"{file.name} has been modified since {frozen_hashes_date} and does not match up with the master hash file."
-                )
-                print(
-                    "Audit aborted due to integrity failure. Reset master hashes or revert changes."
-                )
-                sys.exit(1)
+        if not master_hashes.get(file.name):
+            print(
+                f"CRITICAL: {file.name} is not tracked in master_hashes.json. Please run freeze_hashes.py."
+            )
+            sys.exit(1)
+        if current_hash != master_hashes[file.name]:
+            print(
+                f"{file.name} has been modified since {frozen_hashes_date} and does not match up with the master hash file."
+            )
+            print(
+                "Audit aborted due to integrity failure. Reset master hashes or revert changes."
+            )
+            sys.exit(1)
+    return live_hashes, frozen_hashes_date
 
-    live_hashes["frozen_hashes_date"] = frozen_hashes_date
-    return live_hashes
+
+def orchestration_integrity_check(source_code_files: list, master_hashes_path: Path):
+    current_py_files = unauthorized_files_check(source_code_files)
+    live_hashes, frozen_hashes_date = current_hash_values(
+        source_code_files, master_hashes_path
+    )
+    current_state_metadata = {
+        "live_hashes": live_hashes,
+        "current_files": frozenset(current_py_files),
+        "master_hashes_date": frozen_hashes_date,
+    }
+    return current_state_metadata
 
 
 def sanitize_code(generated_code: str) -> Optional[str]:
