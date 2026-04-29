@@ -35,7 +35,10 @@ def owasp_scrape(a_code: str, url: str, max_retries: int) -> Optional[str]:
 def generate_cwe_dict() -> dict:
     cwe_dict = {}
     max_retries = 3
-    for a_code, url in OWASP2025.URLS.items():
+
+    for a_code in OWASP2025.CATEGORIES.keys():
+        url = OWASP2025.get_owasp_url(a_code)
+
         response = owasp_scrape(a_code, url, max_retries)
         if not response:
             continue

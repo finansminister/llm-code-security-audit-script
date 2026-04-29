@@ -145,7 +145,8 @@ def sarif_parser(sarif_report: Path, cwe_dict: dict, model_name: str) -> Optiona
                 "precision": properties.get("precision", "none"),
                 "CWEs": cwe_list,
                 "OWASP2025_categories": [
-                    f"{code}: {OWASP2025.CATEGORIES.get(code)}" for code in owasp_codes
+                    f"{a_code}: {OWASP2025.get_owasp_name(a_code)}"
+                    for a_code in owasp_codes
                 ],
             }
         )

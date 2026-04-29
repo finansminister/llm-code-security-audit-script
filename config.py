@@ -120,28 +120,51 @@ class LLMConfig:
 
 
 class OWASP2025:
-    URLS = {
-        "A01": "https://owasp.org/Top10/2025/A01_2025-Broken_Access_Control/",
-        "A02": "https://owasp.org/Top10/2025/A02_2025-Security_Misconfiguration/",
-        "A03": "https://owasp.org/Top10/2025/A03_2025-Software_Supply_Chain_Failures/",
-        "A04": "https://owasp.org/Top10/2025/A04_2025-Cryptographic_Failures/",
-        "A05": "https://owasp.org/Top10/2025/A05_2025-Injection/",
-        "A06": "https://owasp.org/Top10/2025/A06_2025-Insecure_Design/",
-        "A07": "https://owasp.org/Top10/2025/A07_2025-Authentication_Failures/",
-        "A08": "https://owasp.org/Top10/2025/A08_2025-Software_or_Data_Integrity_Failures/",
-        "A09": "https://owasp.org/Top10/2025/A09_2025-Security_Logging_and_Alerting_Failures/",
-        "A10": "https://owasp.org/Top10/2025/A10_2025-Mishandling_of_Exceptional_Conditions/",
-    }
+    BASE_URL = "https://owasp.org/Top10/2025/"
 
     CATEGORIES = {
-        "A01": "Broken Access Control",
-        "A02": "Security Misconfiguration",
-        "A03": "Software Supply Chain Failures",
-        "A04": "Cryptographic Failures",
-        "A05": "Injection",
-        "A06": "Insecure Design",
-        "A07": "Authentication Failures",
-        "A08": "Software or Data Integrity Failures",
-        "A09": "Security Logging and Alerting Failures",
-        "A10": "Mishandling of Exceptional Conditions",
+        "A01": {
+            "name": "Broken Access Control",
+            "slug": "A01_2025-Broken_Access_Control",
+        },
+        "A02": {
+            "name": "Security Misconfiguration",
+            "slug": "A02_2025-Security_Misconfiguration",
+        },
+        "A03": {
+            "name": "Software Supply Chain Failures",
+            "slug": "A03_2025-Software_Supply_Chain_Failures",
+        },
+        "A04": {
+            "name": "Cryptographic Failures",
+            "slug": "A04_2025-Cryptographic_Failures",
+        },
+        "A05": {"name": "Injection", "slug": "A05_2025-Injection"},
+        "A06": {"name": "Insecure Design", "slug": "A06_2025-Insecure_Design"},
+        "A07": {
+            "name": "Authentication Failures",
+            "slug": "A07_2025-Authentication_Failures",
+        },
+        "A08": {
+            "name": "Software or Data Integrity Failures",
+            "slug": "A08_2025-Software_or_Data_Integrity_Failures",
+        },
+        "A09": {
+            "name": "Security Logging and Alerting Failures",
+            "slug": "A09_2025-Security_Logging_and_Alerting_Failures",
+        },
+        "A10": {
+            "name": "Mishandling of Exceptional Conditions",
+            "slug": "A10_2025-Mishandling_of_Exceptional_Conditions",
+        },
     }
+
+    @classmethod
+    def get_owasp_url(cls, a_code):
+        category = cls.CATEGORIES.get(a_code)
+        return f"{cls.BASE_URL}{category['slug']}/" if category else ""
+
+    @classmethod
+    def get_owasp_name(cls, a_code):
+        category = cls.CATEGORIES.get(a_code)
+        return category["name"] if category else "Unknown"
