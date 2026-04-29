@@ -16,7 +16,11 @@ from codeql_manager import codeql_and_parse
 from config import Directories, LLMConfig
 
 # In main.py
-from integrity_manager import end_of_process_integrity, llm_output_integrity
+from integrity_manager import (
+    end_of_process_integrity,
+    generate_hashes,
+    llm_output_integrity,
+)
 from llm_api_manager import (
     anthropic_api_call,
     gemini_api_call,
@@ -166,23 +170,6 @@ def code_generation_pipeline(
         api_client.close()
 
     return output_manifest
-
-
-# Preliminary integrity check on the off-chance that the utils.py file does not work.
-def generate_hashes():
-    try:
-        from config import SourceCode
-        from integrity_manager import orchestration_metadata
-
-        source_code_files = SourceCode.source_code_check()
-
-        master_hashes_path = Path("master_hashes.json")
-
-        return orchestration_metadata(source_code_files, master_hashes_path)
-
-    except ImportError as e:
-        print(f"CRITICAL ERROR: Failed to load necessary logic: {e}")
-        sys.exit(1)
 
 
 def environment_setup():

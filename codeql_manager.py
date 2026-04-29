@@ -4,16 +4,6 @@ from pathlib import Path
 from audit_manager import sarif_parser
 from config import Directories
 
-"""
-
-codeql_init():
-    Initializes CodeQL and creates the database.
-
-codeql_analysis():
-    Analyzes the code output and creats a SARIF report.
-
-"""
-
 
 # Creating CodeQl database
 def codeql_init(database_dir: Path, output_dir: Path) -> None:

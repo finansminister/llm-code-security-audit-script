@@ -127,3 +127,19 @@ def orchestration_metadata(source_code_files: list, master_hashes_path: Path):
         "master_hashes_date": frozen_hashes_date,
     }
     return current_state_metadata
+
+
+# Preliminary integrity check on the off-chance that the utils.py file does not work.
+def generate_hashes():
+    try:
+        from config import SourceCode
+
+        source_code_files = SourceCode.source_code_check()
+
+        master_hashes_path = Path("master_hashes.json")
+
+        return orchestration_metadata(source_code_files, master_hashes_path)
+
+    except ImportError as e:
+        print(f"CRITICAL ERROR: Failed to load necessary logic: {e}")
+        sys.exit(1)
