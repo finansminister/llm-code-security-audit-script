@@ -15,12 +15,12 @@ class Directories:
     OUTPUT_DIR = ROOT / "llm-generated-outputs"
     DATASET_DIR = ROOT / "seceval-dataset"
     RESOURCES_DIR = ROOT / "resources"
-    DESCRIPTIVE_DIR = ROOT / "decriptive"
     SESSION_DIR = ROOT / "session-logs"
+
     MASTER_HASH_PATH = ROOT / "master_hashes.json"
 
     SARIF_DIR = RESULTS_DIR / "sarif-reports"
-    CSV_AUDITS_DIR = RESULTS_DIR / "audit-results"
+    CSV_AUDITS_DIR = RESULTS_DIR / "csv-audit-results"
 
     GEMINI_DIR = OUTPUT_DIR / "gemini-generated-outputs"
     ANTHROPIC_DIR = OUTPUT_DIR / "anthropic-generated-outputs"
