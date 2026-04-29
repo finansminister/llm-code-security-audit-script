@@ -2,6 +2,7 @@ import json
 import shutil
 import sys
 import time
+from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -26,7 +27,7 @@ from owasp_manager import cwe_per_owasp, load_owasp_dict
 from statistics_manager import run_statistics
 
 
-def environment_setup():
+def environment_setup() -> tuple:
 
     start_hashes_metadata = generate_hashes()
 
@@ -40,7 +41,7 @@ def environment_setup():
     return (LLMConfig.get_api_parameters(), get_clients(), start_hashes_metadata)
 
 
-def orchestration(session_jsonl_log_path, final_audit_results):
+def orchestration(session_jsonl_log_path: Path, final_audit_results_path: Path) -> None:
     api_parameters, client, start_hashes_metadata = environment_setup()
     cwe_dict = load_owasp_dict(Directories.OWASP_MAP_PATH)
     cwe_per_owasp(cwe_dict, "OWASP_2025_Mapping", session_jsonl_log_path.parent)
@@ -88,7 +89,7 @@ def orchestration(session_jsonl_log_path, final_audit_results):
     print("=" * 60 + "\n")
 
     if stats:
-        run_statistics(stats, final_audit_results)
+        run_statistics(stats, final_audit_results_path)
 
 
 if __name__ == "__main__":
@@ -97,7 +98,7 @@ if __name__ == "__main__":
     )
     session_log_dir.mkdir(parents=True, exist_ok=True)
     session_jsonl_log_path = session_log_dir / "code_generation_log.jsonl"
-    final_audit_results = (
+    final_audit_results_path = (
         Directories.CSV_AUDITS_DIR
         / f"final_audit_results_{time.strftime('%Y%m%d_%H%M%S')}.csv"
     )
@@ -130,7 +131,7 @@ if __name__ == "__main__":
     print("=" * terminal_width + "\n")
 
     try:
-        orchestration(session_jsonl_log_path, final_audit_results)
+        orchestration(session_jsonl_log_path, final_audit_results_path)
     finally:
         sys.stdout = original_stdout
         tee.close()
