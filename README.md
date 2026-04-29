@@ -13,7 +13,7 @@ Technical Architecture
 
 * `audit_manager.py`: Data processing layer. Handles raw API response sanitization, SARIF report parsing, and multi-model logging.
 
-* `stat_generation.py`: The scientific engine. Performs automated ANOVA and Tukey HSD post-hoc testing to determine statistical significance between model performances.
+* `statistics_manager.py`: The scientific engine. Performs automated ANOVA and Tukey HSD post-hoc testing to determine statistical significance between model performances.
 
 ## Configuration & Data
 
