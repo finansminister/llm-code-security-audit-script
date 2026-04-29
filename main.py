@@ -8,14 +8,12 @@ import time
 from pathlib import Path
 from typing import Any, Callable, Optional
 
-import pandas as pd
 from alive_progress import alive_bar
 from dotenv import load_dotenv
 
-from audit_manager import Tee, log_attempt, sanitize_code, sarif_parser
-from codeql_manager import codeql_analysis, codeql_init
+from audit_manager import Tee, log_attempt, sanitize_code
+from codeql_manager import codeql_and_parse
 from config import Directories, LLMConfig
-from descriptive_data import audit_stats, cwe_per_owasp
 
 # In main.py
 from integrity_manager import end_of_process_integrity, llm_output_integrity
@@ -25,8 +23,8 @@ from llm_api_manager import (
     get_clients,
     mistral_api_call,
 )
-from owasp_manager import load_owasp_dict
-from stat_generation import anova_test
+from owasp_manager import cwe_per_owasp, load_owasp_dict
+from statistics_manager import run_statistics
 
 
 def main_api_call(
@@ -170,25 +168,6 @@ def code_generation_pipeline(
     return output_manifest
 
 
-def codeql_and_parse(model_name, output_dir, cwe_dict):
-    print(f"Starting CodeQL Analysis for {model_name}")
-
-    current_database_dir = Directories.CODEQL_DATABASE_DIR / f"database_{model_name}"
-
-    codeql_init(current_database_dir, output_dir)
-
-    report_name = f"{model_name}_analysis_report.sarif"
-    report_path = Directories.SARIF_DIR / report_name
-
-    print(f"Created .sarif report : {report_name}")
-    print(f"At: {report_path}")
-
-    codeql_analysis(current_database_dir, report_path)
-
-    results = sarif_parser(report_path, cwe_dict, model_name)
-    return results, report_path
-
-
 # Preliminary integrity check on the off-chance that the utils.py file does not work.
 def generate_hashes():
     try:
@@ -218,21 +197,6 @@ def environment_setup():
     load_dotenv()
     Directories.directories_check()
     return (LLMConfig.get_api_parameters(), get_clients(), start_hashes_metadata)
-
-
-def run_statistics(stats, final_audit_results):
-    dataframe = pd.DataFrame(stats)
-    dataframe.to_csv(final_audit_results, index=False)
-    print(f"Final dataset saved to {final_audit_results.name}")
-    print("\n" + "=" * 60)
-    print("=== BEGINNING STATISTICAL AUDIT ===")
-    print("=" * 60)
-
-    stat_summary_path = (
-        Directories.CSV_AUDITS_DIR / f"summary_{final_audit_results.name}"
-    )
-    audit_stats(final_audit_results, stat_summary_path)
-    anova_test(final_audit_results)
 
 
 def orchestration(session_jsonl_log_path, final_audit_results):

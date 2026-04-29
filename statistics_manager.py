@@ -4,6 +4,7 @@ import pandas as pd
 from scipy import stats
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
 
+from audit_manager import audit_stats
 from config import Directories
 
 
@@ -64,3 +65,18 @@ def anova_test(csv_audit_file: Path):
     else:
         print("No significant difference found between models (p-value > 0.05)")
         return
+
+
+def run_statistics(stats, final_audit_results):
+    dataframe = pd.DataFrame(stats)
+    dataframe.to_csv(final_audit_results, index=False)
+    print(f"Final dataset saved to {final_audit_results.name}")
+    print("\n" + "=" * 60)
+    print("=== BEGINNING STATISTICAL AUDIT ===")
+    print("=" * 60)
+
+    stat_summary_path = (
+        Directories.CSV_AUDITS_DIR / f"summary_{final_audit_results.name}"
+    )
+    audit_stats(final_audit_results, stat_summary_path)
+    anova_test(final_audit_results)

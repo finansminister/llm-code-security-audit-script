@@ -53,8 +53,7 @@ class SourceCode:
     OWASP_MGR_PATH = ROOT / "owasp_manager.py"
     LLM_API_MGR_PATH = ROOT / "llm_api_manager.py"
     AUDIT_MGR_PATH = ROOT / "audit_manager.py"
-    DESCRIPTIVE_DATA_PATH = ROOT / "descriptive_data.py"
-    STAT_GEN_PATH = ROOT / "stat_generation.py"
+    STAT_MGR_PATH = ROOT / "statistics_manager.py"
     FREEZE_HASHES_PATH = ROOT / "freeze_hashes.py"
 
     @classmethod

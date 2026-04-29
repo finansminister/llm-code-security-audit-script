@@ -1,6 +1,9 @@
 import subprocess
 from pathlib import Path
 
+from audit_manager import sarif_parser
+from config import Directories
+
 """
 
 codeql_init():
@@ -62,3 +65,22 @@ def codeql_analysis(database_dir: Path, report_path: Path) -> None:
     except subprocess.CalledProcessError as error:
         print(f"CodeQL Analysis failed: {error.stderr}")
         return
+
+
+def codeql_and_parse(model_name, output_dir, cwe_dict):
+    print(f"Starting CodeQL Analysis for {model_name}")
+
+    current_database_dir = Directories.CODEQL_DATABASE_DIR / f"database_{model_name}"
+
+    codeql_init(current_database_dir, output_dir)
+
+    report_name = f"{model_name}_analysis_report.sarif"
+    report_path = Directories.SARIF_DIR / report_name
+
+    print(f"Created .sarif report : {report_name}")
+    print(f"At: {report_path}")
+
+    codeql_analysis(current_database_dir, report_path)
+
+    results = sarif_parser(report_path, cwe_dict, model_name)
+    return results, report_path

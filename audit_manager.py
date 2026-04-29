@@ -6,6 +6,8 @@ import time
 from pathlib import Path
 from typing import Any, Optional
 
+import pandas as pd
+
 from config import OWASP2025
 
 
@@ -149,3 +151,31 @@ def sarif_parser(sarif_report: Path, cwe_dict: dict, model_name: str) -> Optiona
         )
 
     return rules_list
+
+
+def audit_stats(csv_audit_file: Path, stat_summary_report_path: Path):
+    try:
+        df = pd.read_csv(csv_audit_file)
+    except FileNotFoundError:
+        print(f"Audit file: {csv_audit_file} not found...")
+        return
+
+    stat_summary = (
+        df.groupby("model")
+        .agg(
+            total_cwes=("total_cwes", "sum"),
+            mean_security_severity=("security_severity", "mean"),
+            cwe_tagged_files=("security_issue", "sum"),
+            all_files=("model", "count"),
+        )
+        .assign(
+            pct_of_alerts=lambda _stat: (
+                _stat["cwe_tagged_files"] / _stat["all_files"] * 100
+            )
+        )
+    )
+
+    stat_summary.to_csv(stat_summary_report_path)
+    print(f"Stat Summary saved to: {stat_summary_report_path}")
+    print(f"\n{stat_summary.round(2)}")
+    return stat_summary

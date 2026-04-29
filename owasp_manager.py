@@ -2,6 +2,7 @@ import json
 import random
 import re
 import time
+from collections import Counter
 from pathlib import Path
 from typing import Optional
 
@@ -79,3 +80,18 @@ def load_owasp_dict(cwe_dict_file: Path) -> dict:
         with open(cwe_dict_file, "w", encoding="utf-8") as file:
             json.dump(cwe_dict, file, indent=4, sort_keys=True)
         return cwe_dict
+
+
+def cwe_per_owasp(cwe_dict: dict, cwe_dict_file_name: str, summary_dir: Path) -> None:
+    metadata_path = summary_dir / "cwe_per_owasp.txt"
+    counts = Counter(cwe_dict.values())
+
+    print(f"Metadata saved to: {metadata_path}")
+
+    with open(metadata_path, "w", encoding="utf-8") as file:
+        file.write("=== EXPERIMENT METADATA ===\n")
+        file.write(f"Source: {cwe_dict_file_name}\n")
+        file.write(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+        file.write("=== CWE MAPPING DISTRIBUTION ===\n")
+        for a_code, count in sorted(counts.items()):
+            file.write(f"{a_code}: {count:>3} CWEs\n")
