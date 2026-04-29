@@ -77,7 +77,7 @@ def orchestration(session_jsonl_log_path, final_audit_results):
         print(f"Vulnerability Report: {report_path}")
         print("=" * 50)
 
-    print("\n*** ALL MODELS PROCESSED - PROCESS FINISHED ***\n")
+    print("\n*** ALL MODELS PROCESSED - CODE GENERATION FINISHED ***\n")
 
     print("\n" + "=" * 60)
     print("=== FINAL SYSTEM STATE VALIDATION ===")
