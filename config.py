@@ -17,6 +17,7 @@ class Directories:
     RESOURCES_DIR = ROOT / "resources"
     DESCRIPTIVE_DIR = ROOT / "decriptive"
     SESSION_DIR = ROOT / "session-logs"
+    MASTER_HASH_PATH = ROOT / "master_hashes.json"
 
     SARIF_DIR = RESULTS_DIR / "sarif-reports"
     CSV_AUDITS_DIR = RESULTS_DIR / "audit-results"

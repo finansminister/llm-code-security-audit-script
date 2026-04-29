@@ -1,3 +1,4 @@
+import json
 import shutil
 import sys
 import time
@@ -102,9 +103,31 @@ if __name__ == "__main__":
     )
     session_terminal_output = session_log_dir / "session_terminal_output.txt"
 
+    terminal_width = 60
+
     tee = Tee(session_terminal_output)
     original_stdout = sys.stdout
     sys.stdout = tee
+
+    print("\n" + "=" * terminal_width)
+    print("ORCHESTRATION SCRIPT START".center(terminal_width))
+    print(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}".center(terminal_width))
+
+    if Directories.MASTER_HASH_PATH.exists():
+        with open(Directories.MASTER_HASH_PATH, "r") as file:
+            master = json.load(file)
+
+        print(f"Master Baseline Date: {master.get['date']}".center(terminal_width))
+        print("-" * terminal_width)
+
+        print(f"{'Source File':<25} | {'SHA-256 (Snippet)'}")
+        print("-" * terminal_width)
+
+        for filename, full_hash in master.items():
+            if filename != "date":
+                print(f"{filename:<35} | {full_hash[:8]}")
+
+    print("=" * terminal_width + "\n")
 
     try:
         orchestration(session_jsonl_log_path, final_audit_results)

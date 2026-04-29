@@ -129,14 +129,13 @@ def orchestration_metadata(source_code_files: list, master_hashes_path: Path):
     return current_state_metadata
 
 
-# Preliminary integrity check on the off-chance that the utils.py file does not work.
 def generate_hashes():
     try:
-        from config import SourceCode
+        from config import Directories, SourceCode
 
         source_code_files = SourceCode.source_code_check()
 
-        master_hashes_path = Path("master_hashes.json")
+        master_hashes_path = Directories.MASTER_HASH_PATH
 
         return orchestration_metadata(source_code_files, master_hashes_path)
 
