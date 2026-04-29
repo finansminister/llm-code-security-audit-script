@@ -1,13 +1,13 @@
 {
-    "date": "2026-04-29 01:07:39",
-    "audit_manager.py": "8ee002e9563e609e2f2156cb2b6af059454e7a043dd0cf92e6626f48e901ea5c",
-    "codeql_manager.py": "555bd03660aee9f224af1a711f13157271153668ece754738c151384abc4c637",
-    "config.py": "6c7b6136e01bb2e91ee7bb14cf961e855af6cde04e9b47b4c556313d4a6af6e6",
-    "descriptive_data.py": "2e6651bab8b1601449e1ce7dc1a6df2c3f1ed5da9ebb8450902b5400184d5f86",
+    "date": "2026-04-29 02:21:37",
+    "audit_manager.py": "2a85642af0530f25fbf9d83fbf68b7ea2000a6bccd678af9663b0184b4820d00",
+    "codeql_manager.py": "4127e36585a24b10a2623b7a22e1a953be860bf07c3932aa41be0216141b440f",
+    "config.py": "8e1fd20c7b257ec8f8c9c4e9ec37012b03bde46ce4a32e9aa178c86c5bc20240",
     "freeze_hashes.py": "681c1c3cb4ae510fbd61d6c12b362ccd4bb6991d20e58720d4709748171868e8",
-    "integrity_manager.py": "af9120defc0ada5bfd40a43fb7e321c01c6b502c2b5f221c3bf7fc83c23a2fe4",
+    "generation_manager.py": "34d86559969ef8c03707106092cc28a341650a6c3d144d51ab874a1ec76bd4c7",
+    "integrity_manager.py": "2477861b7ff85d4b9d1d2558b2ec8ab8ac18e2cc2f2118e4cf0b9ad566432c64",
     "llm_api_manager.py": "7e38452538abc42ce2b91b4510e14094940a0ab9ff81ebeb1f4e10c61e29452f",
-    "main.py": "feabf6bba5c509157cc2f34dc53eddcba2255b24e701767d68a29621e6183dea",
-    "owasp_manager.py": "d80574794c2cde6b7683c92cff9934cb563c57ab26a029ce1688ce0c77933505",
-    "stat_generation.py": "12c97b0f88908e45dbd225a148c8bad434a1e60cdfb807af02efe61a81010da3"
+    "main.py": "a4006eb9556f3d9f809496949876b974f6a74357d4bd90b588a13987d744d751",
+    "owasp_manager.py": "10fe278e1a441f6baab4d1d351ba045e7040923698a4543067accba173bf6afe",
+    "statistics_manager.py": "d22b3610b026b3037f458510a4bd23c9ce9d9cb9d47aadc2ba332f059d2f3d0f"
 }

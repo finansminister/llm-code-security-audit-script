@@ -48,6 +48,7 @@ class SourceCode:
 
     MAIN_PATH = ROOT / "main.py"
     CONFIG_PATH = ROOT / "config.py"
+    GENERATION_MGR_PATH = ROOT / "generation_manager.py"
     INTEGRITY_MGR_PATH = ROOT / "integrity_manager.py"
     CODEQL_MGR_PATH = ROOT / "codeql_manager.py"
     OWASP_MGR_PATH = ROOT / "owasp_manager.py"
