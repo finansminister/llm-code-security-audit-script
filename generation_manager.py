@@ -72,7 +72,7 @@ def main_api_call(
 
 
 def code_generation_pipeline(
-    model: dict, api_parameters: dict, log_file_name: Path
+    model: dict, api_parameters: dict, log_file_name: Path, test_limit=None
 ) -> Optional[Path]:
 
     model_name = model["name"]
@@ -92,6 +92,11 @@ def code_generation_pipeline(
             for line in file:
                 prompts.append(json.loads(line))
 
+        if test_limit:
+            random.seed(42)  # Deterministic shuffle for consistency across models
+            random.shuffle(prompts)
+            prompts = prompts[:test_limit]
+            print(f"!!! TEST MODE: Limited to {test_limit} random prompts !!!")
     except FileNotFoundError:
         print(f"{Directories.DATASET_PATH} not found...")
         return None
