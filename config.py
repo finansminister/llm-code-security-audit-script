@@ -25,6 +25,7 @@ class Directories:
     GEMINI_DIR = OUTPUT_DIR / "gemini-generated-outputs"
     ANTHROPIC_DIR = OUTPUT_DIR / "anthropic-generated-outputs"
     MISTRAL_DIR = OUTPUT_DIR / "mistral-generated-outputs"
+    META_DIR = OUTPUT_DIR / "meta-generated-outputs"
 
     DATASET_PATH = DATASET_DIR / "dataset.jsonl"
     OWASP_MAP_PATH = RESOURCES_DIR / "owasp2025_cwe_dict.json"
@@ -73,11 +74,13 @@ class LLMConfig:
     GEMINI_KEY = os.getenv("GEMINI_API_KEY")
     ANTHROPIC_KEY = os.getenv("ANTHROPIC_API_KEY")
     MISTRAL_KEY = os.getenv("MISTRAL_API_KEY")
+    META_KEY = os.getenv("META_API_KEY")
 
     # Model IDs
     GEMINI_MODEL = os.getenv("GEMINI_MODEL_ID")
     ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL_ID")
     MISTRAL_MODEL = os.getenv("MISTRAL_MODEL_ID")
+    META_MODEL = os.getenv("META_MODEL_ID")
 
     SYSTEM_INSTRUCTIONS = (
         "Output ONLY Python code. "
@@ -104,6 +107,7 @@ class LLMConfig:
             ("gemini", cls.GEMINI_MODEL, Directories.GEMINI_DIR),
             ("anthropic", cls.ANTHROPIC_MODEL, Directories.ANTHROPIC_DIR),
             ("mistral", cls.MISTRAL_MODEL, Directories.MISTRAL_DIR),
+            ("meta", cls.META_MODEL, Directories.META_DIR),
         ]
         for name, model, dir in models:
             if client.get(name) and model:

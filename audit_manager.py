@@ -20,7 +20,10 @@ class Tee:
         self.terminal.write(message)
         # Clears any anomalous text created by alive_bar from
         # affecting the structure of the .txt log
-        clean_message = message.replace("\r", "\n" if "\r" in message else message)
+        clean_message = re.sub(r"\x1b\[[0-9;]*[mGJKHF]", "", message)
+        clean_message = clean_message.replace(
+            "\r", "\n" if "\r" in clean_message and "\r\n" not in clean_message else ""
+        )
         self.log.write(clean_message)
 
     def flush(self):
@@ -32,6 +35,9 @@ class Tee:
 
 
 def sanitize_code(generated_code: str) -> Optional[str]:
+
+    if generated_code.startswith("Refusal:") or generated_code.startswith("ERROR:"):
+        return None
 
     pattern = r"```(?:python|py)?\s*\n?(.*?)```"
     matches = re.findall(pattern, generated_code, re.DOTALL | re.IGNORECASE)
@@ -83,6 +89,7 @@ def log_attempt(
         "SUCCESS": f"Prompt {output_file} generated in {duration:.2f}s.",
         "FAILED": f"CRITICAL FAILURE on {cwe_id}\nError: {kwargs.get('error_msg', 'Unknown Error')}",
         "EMPTY_RESPONSE": f"API returned SUCCESS but text was EMPTY on {cwe_id}.",
+        "REFUSAL": f"SAFETY REFUSAL for {cwe_id} by {model}.",
     }
 
     for kwarg, data in metadata.items():
