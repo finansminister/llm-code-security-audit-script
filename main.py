@@ -100,7 +100,7 @@ def orchestration(
 
 
 if __name__ == "__main__":
-    TEST_MODE = True
+    TEST_MODE = False
     LIMIT = 3 if TEST_MODE else None
 
     session_log_dir = (

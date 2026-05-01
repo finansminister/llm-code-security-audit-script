@@ -47,6 +47,7 @@ def gemini_api_call(client, model_id, temperature, max_tokens, prompt):
 
         return content, used_tokens, finish_reason
     except Exception as e:
+        print(f"DEBUG: {model_id} API Call Failed: {e}")
         return f"ERROR: {str(e)}", {"prompt": 0, "completion": 0, "total": 0}, "error"
 
 
@@ -57,14 +58,17 @@ def anthropic_api_call(
     max_tokens,
     prompt,
 ):
+    kwargs = {
+        "model": model_id,
+        "max_tokens": max_tokens,
+        "system": LLMConfig.SYSTEM_INSTRUCTIONS,  # Use the variable here
+        "messages": [{"role": "user", "content": prompt}],
+    }
+    if "opus-4-7" not in model_id:
+        kwargs["temperature"] = temperature
+
     try:
-        response = client.messages.create(
-            model=model_id,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            system=LLMConfig.SYSTEM_INSTRUCTIONS,  # Use the variable here
-            messages=[{"role": "user", "content": prompt}],
-        )
+        response = client.messages.create(**kwargs)
 
         content = response.content[0].text
         finish_reason = response.stop_reason
@@ -81,6 +85,7 @@ def anthropic_api_call(
             )
         return content, used_tokens, finish_reason
     except Exception as e:
+        print(f"DEBUG: {model_id} API Call Failed: {e}")
         return f"ERROR: {str(e)}", {"prompt": 0, "completion": 0, "total": 0}, "error"
 
 
@@ -113,6 +118,7 @@ def mistral_api_call(client, model_id, temperature, max_tokens, prompt):
             )
         return content, used_tokens, finish_reason
     except Exception as e:
+        print(f"DEBUG: {model_id} API Call Failed: {e}")
         return f"ERROR: {str(e)}", {"prompt": 0, "completion": 0, "total": 0}, "error"
 
 
@@ -148,6 +154,7 @@ def meta_api_call(client, model_id, temperature, max_tokens, prompt):
 
         return content, used_tokens, finish_reason
     except Exception as e:
+        print(f"DEBUG: {model_id} API Call Failed: {e}")
         return f"ERROR: {str(e)}", {"prompt": 0, "completion": 0, "total": 0}, "error"
 
 

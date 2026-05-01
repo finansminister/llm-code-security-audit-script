@@ -10,7 +10,7 @@ load_dotenv()
 class Directories:
     ROOT = Path(__file__).resolve().parent
 
-    CODEQL_DATABASE_DIR = ROOT / "codeql-database"
+    CODEQL_DATABASE_DIR = ROOT / "codeql-databases"
     RESULTS_DIR = ROOT / "analysis-results"
     OUTPUT_DIR = ROOT / "llm-generated-outputs"
     DATASET_DIR = ROOT / "seceval-dataset"
@@ -94,7 +94,7 @@ class LLMConfig:
         try:
             return {
                 "temperature": float(os.getenv("GLOBAL_TEMPERATURE", "0.1")),
-                "max_tokens": int(os.getenv("MAX_TOKENS", "1024")),
+                "max_tokens": int(os.getenv("MAX_TOKENS", "2048")),
             }
         except ValueError as e:
             print(f"CRITICAL ERROR: Invalid value-type in .env file: {e}")

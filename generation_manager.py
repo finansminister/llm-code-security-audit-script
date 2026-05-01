@@ -16,6 +16,7 @@ def main_api_call(
     api_call_func: Callable,
     cwe_id: str,
     output_path: Path,
+    model_id: str,
     **kwargs: Any,
 ) -> Optional[str]:
 
@@ -26,6 +27,7 @@ def main_api_call(
         "cwe_id": cwe_id,
         "output_file": output_file,
         "start_time": start_time,
+        "model": model_id,
         **kwargs,
     }
 
@@ -107,7 +109,11 @@ def code_generation_pipeline(
 
     # stylistic progress bar used to display the progress of code generation
     with alive_bar(
-        len(prompts), title=f"Model: {model_id}", bar="classic", spinner="dots_waves2"
+        len(prompts),
+        title=f"Model: {model_id}",
+        bar="classic",
+        spinner="brackets",
+        force_tty=True,
     ) as progress_bar:
         for index, data in enumerate(prompts, start=1):
             try:

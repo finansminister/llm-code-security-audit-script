@@ -26,6 +26,9 @@ class Tee:
         )
         self.log.write(clean_message)
 
+    def fileno(self):
+        return self.terminal.fileno()
+
     def flush(self):
         self.terminal.flush()
         self.log.flush()
@@ -118,37 +121,55 @@ def sarif_parser(sarif_report: Path, cwe_dict: dict, model_name: str) -> Optiona
         return None
 
     runs = data.get("runs", [{}])[0]
-    rules = runs.get("tool", {}).get("driver", {}).get("rules", [])
+    rules_metadata = {
+        rule["id"]: rule
+        for rule in runs.get("tool", {}).get("driver", {}).get("rules", [])
+    }
+    results = runs.get("results", [])
+    findings = []
 
-    rules_list = []
+    if not results:
+        return [
+            {
+                "model": model_name,
+                "rule_id": "none",
+                "security_severity": 0.0,
+                "security_issue": False,
+                "total_cwes": 0,
+                "level": "none",
+                "precision": "none",
+                "CWEs": [],
+                "OWASP2025_categories": [],
+            }
+        ]
 
-    for rule in rules:
+    for result in results:
+        rule_id = result.get("ruleId", [])
+        rule_obj = rules_metadata.get(rule_id, {})
+        properties = rule_obj.get("properties", {})
+        default_config = rule_obj.get("defaultConfiguration", {})
+        tags = properties.get("tags", [])
+
         owasp_codes = set()
         cwe_list = []
-
-        rule_id = rule.get("id", [])
-        properties = rule.get("properties", {})
-        tags = properties.get("tags", [])
 
         for tag in tags:
             cwe = re.search(r"cwe-(\d+)", tag.lower())
             if cwe:
                 cwe_id = f"cwe-{int(cwe.group(1)):03d}"
                 cwe_list.append(cwe_id)
+                a_code = cwe_dict.get(cwe_id)
+                if a_code:
+                    owasp_codes.add(a_code)
 
-        for id in cwe_list:
-            a_code = cwe_dict.get(id)
-            if a_code:
-                owasp_codes.add(a_code)
-
-        rules_list.append(
+        findings.append(
             {
                 "model": model_name,
                 "rule_id": rule_id,
                 "security_severity": float(properties.get("security-severity", 0.0)),
                 "security_issue": len(owasp_codes) > 0,
                 "total_cwes": len(owasp_codes),
-                "level": rule.get("defaultConfiguration", {}).get("level", "none"),
+                "level": default_config.get("level", "none"),
                 "precision": properties.get("precision", "none"),
                 "CWEs": cwe_list,
                 "OWASP2025_categories": [
@@ -158,7 +179,7 @@ def sarif_parser(sarif_report: Path, cwe_dict: dict, model_name: str) -> Optiona
             }
         )
 
-    return rules_list
+    return findings
 
 
 def audit_stats(csv_audit_file: Path, stat_summary_report_path: Path):
