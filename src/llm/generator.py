@@ -2,13 +2,14 @@ import hashlib
 import json
 import random
 import re
+import sys
 import time
 from pathlib import Path
 from typing import Any, Callable, Optional
 
-from alive_progress import alive_bar
+from tqdm import tqdm
 
-from config import Directories
+from config import Directories, UIConfig
 from src.analysis.audit import log_attempt, sanitize_code
 
 
@@ -109,18 +110,16 @@ def code_generation_pipeline(
         return None
 
     # stylistic progress bar used to display the progress of code generation
-    bar_title = f"ID: {model_id[:25]:<35}"
+    desc = f"ID: {model_id[:25]:<35}"
     print("\n" * 2)
-    with alive_bar(
-        len(prompts),
-        title=bar_title,
-        bar="classic",
-        length=40,
-        spinner="dots",
-        force_tty=True,
-        enrich_print=False,
-        monitor=True,
-        stats=True,
+    with tqdm(
+        total=len(prompts),
+        desc=desc,
+        file=sys.stdout,
+        bar_format="{desc} |{bar:40}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]",
+        leave=True,
+        dynamic_ncols=False,
+        ncols=UIConfig.TERMINAL_WIDTH,
     ) as progress_bar:
         for index, data in enumerate(prompts, start=1):
             try:
@@ -132,7 +131,7 @@ def code_generation_pipeline(
 
                 if output_file_path.exists():
                     print(f"Skipping prompt {index}: File already exists.")
-                    progress_bar()
+                    progress_bar.update(1)
                     continue
 
                 file_hash = main_api_call(
@@ -157,7 +156,7 @@ def code_generation_pipeline(
                 print(f"Skipping malformed JSON at prompt: {index}")
             except Exception as e:
                 print(f"Error processing line {index}: {e}")
-            progress_bar()
+            progress_bar.update(1)
 
     output_manifest = log_file_name.parent / f"{model_name}_output_manifest.json"
     with open(output_manifest, "w", encoding="utf-8") as file:
