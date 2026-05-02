@@ -23,7 +23,6 @@ class Tee:
         # affecting the structure of the .txt log
         if any(char in message for char in ("\r", "\x1b")):
             return
-
         if "ID: " in message and "\n" not in message:
             return
 
