@@ -113,7 +113,9 @@ if __name__ == "__main__":
     with keep.running():
         tee = Tee(session_terminal_output)
         original_stdout = sys.stdout
+        original_stderr = sys.stderr
         sys.stdout = tee
+        sys.stderr = tee
 
         print("\n" + "=" * width)
         print(f"{'TEST RUN ACTIVE' if TEST_MODE else 'FULL AUDIT START'}".center(width))
@@ -150,6 +152,7 @@ if __name__ == "__main__":
             )
         finally:
             sys.stdout = original_stdout
+            sys.stderr = original_stderr
             tee.close()
             print(f"\nSession Complete. Log saved to {session_terminal_output}")
 
