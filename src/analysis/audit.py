@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 import pandas as pd
+from tqdm import tqdm
 
 from config import OWASP2025, Directories, UIConfig
 
@@ -107,7 +108,7 @@ def log_attempt(
         file.write(json.dumps(log_entry) + "\n")
 
     if msg := status_messages.get(status):
-        print(f"\t{msg}")
+        tqdm.write(f"\t{msg}")
 
 
 def sarif_parser(sarif_report: Path, cwe_dict: dict, model_name: str) -> Optional[list]:

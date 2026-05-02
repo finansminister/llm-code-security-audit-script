@@ -62,7 +62,7 @@ def main_api_call(
                 http_error = error_match.group()
                 # Exponential Backoff + Random Jitter to prevent server issues with multiple simultaneous calls
                 delay = (initial_delay * (2**attempt)) + random.uniform(0, 1)
-                print(
+                tqdm.write(
                     f"Server busy (HTTP: {http_error}). "
                     f"Retrying {output_path} in {delay:.2f}s... "
                     f"(Attempt {attempt + 1}/{max_retries})"
@@ -130,7 +130,7 @@ def code_generation_pipeline(
                 output_file_path = model_output_dir / output_file
 
                 if output_file_path.exists():
-                    print(f"Skipping prompt {index}: File already exists.")
+                    progress_bar.write(f"Skipping prompt {index}: File already exists.")
                     progress_bar.update(1)
                     continue
 
