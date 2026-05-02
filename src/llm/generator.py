@@ -109,12 +109,18 @@ def code_generation_pipeline(
         return None
 
     # stylistic progress bar used to display the progress of code generation
+    bar_title = f"ID: {model_id[:25]:<35}"
+    print("\n" * 2)
     with alive_bar(
         len(prompts),
-        title=f"Model: {model_id}",
+        title=bar_title,
         bar="classic",
-        spinner="brackets",
+        length=40,
+        spinner="dots",
         force_tty=True,
+        enrich_print=False,
+        monitor=True,
+        stats=True,
     ) as progress_bar:
         for index, data in enumerate(prompts, start=1):
             try:

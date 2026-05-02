@@ -1,7 +1,6 @@
 import json
 import shutil
 import sys
-import time
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -110,21 +109,24 @@ if __name__ == "__main__":
     session_terminal_output = session_log_dir / "session_terminal_output.txt"
 
     width = UIConfig.TERMINAL_WIDTH
+    f_pad = UIConfig.FILE_NAME_PAD
     with keep.running():
         tee = Tee(session_terminal_output)
         original_stdout = sys.stdout
         sys.stdout = tee
 
-        print("\n" + "=" * 60)
-        print(f"{'TEST RUN ACTIVE' if TEST_MODE else 'FULL AUDIT START'}".center(60))
+        print("\n" + "=" * width)
+        print(f"{'TEST RUN ACTIVE' if TEST_MODE else 'FULL AUDIT START'}".center(width))
         print(
-            f"Sample Size: {LIMIT if TEST_MODE else '121'} prompts per model".center(60)
+            f"Sample Size: {LIMIT if TEST_MODE else '121'} prompts per model".center(
+                width
+            )
         )
-        print("=" * 60 + "\n")
+        print("=" * width + "\n")
 
         print("\n" + "=" * width)
         print("ORCHESTRATION SCRIPT START".center(width))
-        print(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}".center(width))
+        print(f"Timestamp: {Directories.SESSION_ID_READABLE}".center(width))
 
         if Directories.MASTER_HASH_PATH.exists():
             with open(Directories.MASTER_HASH_PATH, "r") as file:
@@ -133,12 +135,12 @@ if __name__ == "__main__":
             print(f"Master Baseline Date: {master.get('date')}".center(width))
             print("-" * width)
 
-            print(f"{'Source File':<25} | {'SHA-256 (Snippet)'}")
+            print(f"{'AUTHORIZED SOURCE FILE':<{f_pad}} | {'SHA-256 (SNIPPET)'}")
             print("-" * width)
 
             for filename, full_hash in master.items():
                 if filename != "date":
-                    print(f"{filename:<35} | {full_hash[:8]}")
+                    print(f"{filename:<{f_pad}} | {full_hash[:8]}")
 
         print("=" * width + "\n")
 

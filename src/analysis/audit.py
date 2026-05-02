@@ -21,7 +21,7 @@ class Tee:
         self.terminal.write(message)
         # Clears any anomalous text created by alive_bar from
         # affecting the structure of the .txt log
-        if "\r" in message:
+        if "\r" in message or "\x1b" in message:
             return
         clean_message = self.ansi_escape.sub("", message)
 
