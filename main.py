@@ -5,6 +5,7 @@ import time
 from pathlib import Path
 
 from dotenv import load_dotenv
+from wakepy import keep
 
 from audit_manager import Tee
 from codeql_manager import codeql_and_parse
@@ -115,43 +116,45 @@ if __name__ == "__main__":
     session_terminal_output = session_log_dir / "session_terminal_output.txt"
 
     terminal_width = 60
+    with keep.running():
+        tee = Tee(session_terminal_output)
+        original_stdout = sys.stdout
+        sys.stdout = tee
 
-    tee = Tee(session_terminal_output)
-    original_stdout = sys.stdout
-    sys.stdout = tee
-
-    print("\n" + "=" * 60)
-    print(f"{'TEST RUN ACTIVE' if TEST_MODE else 'FULL AUDIT START'}".center(60))
-    print(f"Sample Size: {LIMIT if TEST_MODE else '121'} prompts per model".center(60))
-    print("=" * 60 + "\n")
-
-    print("\n" + "=" * terminal_width)
-    print("ORCHESTRATION SCRIPT START".center(terminal_width))
-    print(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}".center(terminal_width))
-
-    if Directories.MASTER_HASH_PATH.exists():
-        with open(Directories.MASTER_HASH_PATH, "r") as file:
-            master = json.load(file)
-
-        print(f"Master Baseline Date: {master.get('date')}".center(terminal_width))
-        print("-" * terminal_width)
-
-        print(f"{'Source File':<25} | {'SHA-256 (Snippet)'}")
-        print("-" * terminal_width)
-
-        for filename, full_hash in master.items():
-            if filename != "date":
-                print(f"{filename:<35} | {full_hash[:8]}")
-
-    print("=" * terminal_width + "\n")
-
-    try:
-        orchestration(
-            session_jsonl_log_path, final_audit_results_path, test_limit=LIMIT
+        print("\n" + "=" * 60)
+        print(f"{'TEST RUN ACTIVE' if TEST_MODE else 'FULL AUDIT START'}".center(60))
+        print(
+            f"Sample Size: {LIMIT if TEST_MODE else '121'} prompts per model".center(60)
         )
-    finally:
-        sys.stdout = original_stdout
-        tee.close()
-        print(f"\nSession Complete. Log saved to {session_terminal_output}")
+        print("=" * 60 + "\n")
 
-    sys.exit(0)
+        print("\n" + "=" * terminal_width)
+        print("ORCHESTRATION SCRIPT START".center(terminal_width))
+        print(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}".center(terminal_width))
+
+        if Directories.MASTER_HASH_PATH.exists():
+            with open(Directories.MASTER_HASH_PATH, "r") as file:
+                master = json.load(file)
+
+            print(f"Master Baseline Date: {master.get('date')}".center(terminal_width))
+            print("-" * terminal_width)
+
+            print(f"{'Source File':<25} | {'SHA-256 (Snippet)'}")
+            print("-" * terminal_width)
+
+            for filename, full_hash in master.items():
+                if filename != "date":
+                    print(f"{filename:<35} | {full_hash[:8]}")
+
+        print("=" * terminal_width + "\n")
+
+        try:
+            orchestration(
+                session_jsonl_log_path, final_audit_results_path, test_limit=LIMIT
+            )
+        finally:
+            sys.stdout = original_stdout
+            tee.close()
+            print(f"\nSession Complete. Log saved to {session_terminal_output}")
+
+        sys.exit(0)
