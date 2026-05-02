@@ -8,7 +8,7 @@ from typing import Any, Optional
 
 import pandas as pd
 
-from config import OWASP2025, Directories
+from config import OWASP2025, Directories, UIConfig
 
 
 class Tee:
@@ -24,7 +24,9 @@ class Tee:
         if "\r" in message:
             return
         clean_message = self.ansi_escape.sub("", message)
-        self.log.write(clean_message)
+
+        if clean_message.strip() or clean_message == "\n":
+            self.log.write(clean_message)
 
     def fileno(self):
         return self.terminal.fileno()
@@ -88,11 +90,12 @@ def log_attempt(
         "finish_reason": "finish_reason",
     }
 
+    f_pad = UIConfig.FILE_NAME_PAD
     status_messages = {
-        "SUCCESS": f"Prompt {output_file:<50} | Generated in {duration:>5.2f}s.",
-        "FAILED": f"CRITICAL FAILURE on {cwe_id:<50} | Error: {str(kwargs.get('error_msg', 'Unknown'))[:30]}",
-        "EMPTY_RESPONSE": f"EMPTY RESPONSE   on {cwe_id:<50} | API returned SUCCESS but text was EMPTY.",
-        "REFUSAL": f"SAFETY REFUSAL   for {cwe_id:<50} | Model: {model}",
+        "SUCCESS": f"Prompt {output_file:<{f_pad}} | Generated in {duration:>5.2f}s.",
+        "FAILED": f"CRITICAL FAILURE on {cwe_id:<{f_pad}} | Error: {str(kwargs.get('error_msg', 'Unknown'))[:30]}",
+        "EMPTY_RESPONSE": f"EMPTY RESPONSE   on {cwe_id:<{f_pad}} | API returned SUCCESS but text was EMPTY.",
+        "REFUSAL": f"SAFETY REFUSAL   for {cwe_id:<{f_pad}} | Model: {model}",
     }
 
     for kwarg, data in metadata.items():

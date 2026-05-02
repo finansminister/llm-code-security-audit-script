@@ -7,7 +7,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from wakepy import keep
 
-from config import Directories, LLMConfig
+from config import Directories, LLMConfig, UIConfig
 from src.analysis import Tee, run_statistics
 from src.core import (
     end_of_process_integrity,
@@ -82,15 +82,16 @@ def orchestration(
         print(f"Vulnerability Report: {report_path}")
         print("=" * 50)
 
+    width = UIConfig.TERMINAL_WIDTH
     print("\n*** ALL MODELS PROCESSED - CODE GENERATION FINISHED ***\n")
 
-    print("\n" + "=" * 60)
+    print("\n" + "=" * width)
     print("=== FINAL SYSTEM STATE VALIDATION ===")
 
     final_hashes_metadata = generate_hashes()
     end_of_process_integrity(final_hashes_metadata, start_hashes_metadata)
 
-    print("=" * 60 + "\n")
+    print("=" * width + "\n")
 
     if stats:
         run_statistics(stats, final_audit_results_path)
@@ -108,7 +109,7 @@ if __name__ == "__main__":
     )
     session_terminal_output = session_log_dir / "session_terminal_output.txt"
 
-    terminal_width = 60
+    width = UIConfig.TERMINAL_WIDTH
     with keep.running():
         tee = Tee(session_terminal_output)
         original_stdout = sys.stdout
@@ -121,25 +122,25 @@ if __name__ == "__main__":
         )
         print("=" * 60 + "\n")
 
-        print("\n" + "=" * terminal_width)
-        print("ORCHESTRATION SCRIPT START".center(terminal_width))
-        print(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}".center(terminal_width))
+        print("\n" + "=" * width)
+        print("ORCHESTRATION SCRIPT START".center(width))
+        print(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S')}".center(width))
 
         if Directories.MASTER_HASH_PATH.exists():
             with open(Directories.MASTER_HASH_PATH, "r") as file:
                 master = json.load(file)
 
-            print(f"Master Baseline Date: {master.get('date')}".center(terminal_width))
-            print("-" * terminal_width)
+            print(f"Master Baseline Date: {master.get('date')}".center(width))
+            print("-" * width)
 
             print(f"{'Source File':<25} | {'SHA-256 (Snippet)'}")
-            print("-" * terminal_width)
+            print("-" * width)
 
             for filename, full_hash in master.items():
                 if filename != "date":
                     print(f"{filename:<35} | {full_hash[:8]}")
 
-        print("=" * terminal_width + "\n")
+        print("=" * width + "\n")
 
         try:
             orchestration(

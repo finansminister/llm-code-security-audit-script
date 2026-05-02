@@ -8,6 +8,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+class UIConfig:
+    TERMINAL_WIDTH = 120
+    FILE_NAME_PAD = 65
+
+
 class Directories:
     ROOT = Path(__file__).resolve().parent
     SESSION_ID = time.strftime("%Y%m%d_%H%M%S")
@@ -32,17 +37,22 @@ class Directories:
 
     @classmethod
     def directories_check(cls):
+        width = UIConfig.TERMINAL_WIDTH
+        print("=" * width)
+        print(f"Project Root: {cls.ROOT}".center(60))
+        print("=" * width)
         directories = [
             getattr(cls, dir_name)
             for dir_name in dir(cls)
             if isinstance(getattr(cls, dir_name), Path) and dir_name.endswith("_DIR")
         ]
         for directory in directories:
+            rel_path = directory.relative_to(cls.ROOT)
             if not directory.exists():
                 directory.mkdir(parents=True, exist_ok=True)
-                print(f"Created directory:      {directory}")
+                print(f"Created directory:  ./{rel_path}".center(width))
             else:
-                print(f"Verified directory:     {directory}")
+                print(f"Verified directory: ./{rel_path}".center(width))
 
 
 class SourceCode:
