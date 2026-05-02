@@ -182,24 +182,29 @@ def sarif_parser(sarif_report: Path, cwe_dict: dict, model_name: str) -> Optiona
     return findings
 
 
-def audit_stats(csv_audit_file: Path, stat_summary_report_path: Path):
+def audit_stats(
+    csv_audit_file: Path, stat_summary_report_path: Path
+) -> Optional[pd.DataFrame]:
     try:
         df = pd.read_csv(csv_audit_file)
     except FileNotFoundError:
         print(f"Audit file: {csv_audit_file} not found...")
-        return
+        return None
 
     stat_summary = (
         df.groupby("model")
         .agg(
-            total_cwes=("total_cwes", "sum"),
-            mean_security_severity=("security_severity", "mean"),
-            cwe_tagged_files=("security_issue", "sum"),
-            all_files=("model", "count"),
+            total_alerts=("security_issue", "count"),
+            mean_severity=("security_severity", "mean"),
+            vulnerable_files=(
+                "file_path",
+                lambda x: df.loc[x.index][df["security_issue"]]["file_path"].nunique(),
+            ),
+            total_unique_files=("file_path", "nunique"),
         )
         .assign(
-            pct_of_alerts=lambda _stat: (
-                _stat["cwe_tagged_files"] / _stat["all_files"] * 100
+            vulnerability_rate=lambda x: (
+                x["vulnerable_files"] / x["total_unique_files"] * 100
             )
         )
     )
