@@ -4,7 +4,7 @@ import time
 from pathlib import Path
 from typing import Optional
 
-from config import SourceCode
+from config import Directories, SourceCode
 
 
 def generate_sha256(file_path: Path) -> Optional[str]:
@@ -24,17 +24,20 @@ def generate_master_hashes():
 
     master_hashes = {"date": time.strftime("%Y-%m-%d %H:%M:%S")}
 
+    temp_hashes = {}
     for file_path in source_code_files:
         if (file_hash := generate_sha256(file_path)) is not None:
-            relative_path = file_path.relative_to(SourceCode.ROOT)
-            master_hashes[str(relative_path)] = file_hash
+            relative_path = str(file_path.relative_to(SourceCode.ROOT))
+            temp_hashes[str(relative_path)] = file_hash
             print(f"Hashed: {relative_path}")
 
-    output_path = SourceCode.ROOT / "master_hashes.json"
-    with open(output_path, "w") as file:
+    for key in sorted(temp_hashes.keys()):
+        master_hashes[key] = temp_hashes[key]
+
+    with open(Directories.MASTER_HASH_PATH, "w") as file:
         json.dump(master_hashes, file, indent=4)
 
-    print(f"Hashes frozen in {output_path}")
+    print(f"Hashes frozen in {Directories.MASTER_HASH_PATH.name}")
 
 
 if __name__ == "__main__":
