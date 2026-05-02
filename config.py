@@ -23,7 +23,7 @@ class Directories:
     DATASET_DIR = ROOT / "seceval-dataset"
     RESOURCES_DIR = ROOT / "resources"
 
-    OUTPUT_DIR = PARENT_OUTPUT_DIR / f"llm-generated-outputs-{SESSION_ID}"
+    OUTPUT_DIR = PARENT_OUTPUT_DIR / f"code-audit-{SESSION_ID}"
     RESULTS_DIR = OUTPUT_DIR / "analysis-results"
 
     GEMINI_DIR = OUTPUT_DIR / "gemini-generated-outputs"
@@ -34,6 +34,26 @@ class Directories:
     MASTER_HASH_PATH = ROOT / "master_hashes.json"
     DATASET_PATH = DATASET_DIR / "dataset.jsonl"
     OWASP_MAP_PATH = RESOURCES_DIR / "owasp2025_cwe_dict.json"
+
+    @classmethod
+    def rebase_session(cls, old_session_id: str):
+
+        cls.SESSION_ID = old_session_id
+        try:
+            date_obj = time.strptime(old_session_id, "%Y%m%d_%H%M%S")
+            cls.SESSION_ID_READABLE = time.strftime("%Y-%m-%d %H:%M:%S", date_obj)
+        except ValueError:
+            cls.SESSION_ID_READABLE = old_session_id
+
+        clean_id = old_session_id.replace("code-audit-", "")
+
+        cls.OUTPUT_DIR = cls.PARENT_OUTPUT_DIR / f"code-audit-{clean_id}"
+        cls.RESULTS_DIR = cls.OUTPUT_DIR / "analysis-results"
+
+        cls.GEMINI_DIR = cls.OUTPUT_DIR / "gemini-generated-outputs"
+        cls.ANTHROPIC_DIR = cls.OUTPUT_DIR / "anthropic-generated-outputs"
+        cls.MISTRAL_DIR = cls.OUTPUT_DIR / "mistral-generated-outputs"
+        cls.META_DIR = cls.OUTPUT_DIR / "meta-generated-outputs"
 
     @classmethod
     def directories_check(cls):

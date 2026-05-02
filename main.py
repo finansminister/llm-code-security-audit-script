@@ -2,6 +2,7 @@ import json
 import shutil
 import sys
 from pathlib import Path
+from typing import Optional
 
 from dotenv import load_dotenv
 from wakepy import keep
@@ -36,6 +37,29 @@ def environment_setup() -> tuple:
     load_dotenv()
     Directories.directories_check()
     return (LLMConfig.get_api_parameters(), get_clients(), start_hashes_metadata)
+
+
+def resume_session(session_log_dir: Path) -> Optional[str]:
+    sessions = sorted(
+        [dir for dir in session_log_dir.iterdir() if dir.is_dir()],
+        key=lambda x: x.stat().st_mtime,
+        reverse=True,
+    )[:5]
+
+    if not sessions:
+        return None
+
+    print(f"\n{' RECENT SESSIONS ':=^50}")
+    for index, session in enumerate(sessions, 1):
+        print(f"[{index}] {session}")
+    print(f"{'':=^50}")
+
+    choice = input(
+        "\nResume a previous session? (Enter session index [#] or leave blank for new session): "
+    ).strip()
+    if choice.isdigit() and 1 <= int(choice) <= len(sessions):
+        return sessions[int(choice) - 1].name
+    return None
 
 
 def orchestration(
@@ -99,6 +123,9 @@ def orchestration(
 if __name__ == "__main__":
     TEST_MODE = False
     LIMIT = 3 if TEST_MODE else None
+
+    if (legacy_session_id := resume_session(Directories.PARENT_OUTPUT_DIR)) is not None:
+        Directories.rebase_session(legacy_session_id)
 
     session_log_dir = Directories.OUTPUT_DIR / "session-logs"
     session_log_dir.mkdir(parents=True, exist_ok=True)
