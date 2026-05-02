@@ -7,26 +7,22 @@ from pathlib import Path
 from dotenv import load_dotenv
 from wakepy import keep
 
-from audit_manager import Tee
-from codeql_manager import codeql_and_parse
 from config import Directories, LLMConfig
-from generation_manager import code_generation_pipeline
-
-# In main.py
-from integrity_manager import (
+from src.analysis import Tee, run_statistics
+from src.core import (
     end_of_process_integrity,
     generate_hashes,
     llm_output_integrity,
 )
-from llm_api_manager import (
+from src.llm import (
     anthropic_api_call,
+    code_generation_pipeline,
     gemini_api_call,
     get_clients,
     meta_api_call,
     mistral_api_call,
 )
-from owasp_manager import cwe_per_owasp, load_owasp_dict
-from statistics_manager import run_statistics
+from src.scanners import codeql_and_parse, cwe_per_owasp, load_owasp_dict
 
 
 def environment_setup() -> tuple:

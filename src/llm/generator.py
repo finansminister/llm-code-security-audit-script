@@ -8,8 +8,8 @@ from typing import Any, Callable, Optional
 
 from alive_progress import alive_bar
 
-from audit_manager import log_attempt, sanitize_code
 from config import Directories
+from src.analysis.audit import log_attempt, sanitize_code
 
 
 def main_api_call(
@@ -99,6 +99,7 @@ def code_generation_pipeline(
             random.shuffle(prompts)
             prompts = prompts[:test_limit]
             print(f"!!! TEST MODE: Limited to {test_limit} random prompts !!!")
+
     except FileNotFoundError:
         print(f"{Directories.DATASET_PATH} not found...")
         return None

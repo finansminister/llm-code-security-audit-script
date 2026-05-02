@@ -9,10 +9,7 @@ __pycache__/
 
 llm-generated-outputs/
 codeql-databases/
-analysis-results/
 temp-tests/
-session-logs/
-descriptive/
 resources/
 
 # --- Environment ---

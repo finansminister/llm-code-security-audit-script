@@ -8,22 +8,22 @@ from typing import Any, Optional
 
 import pandas as pd
 
-from config import OWASP2025
+from config import OWASP2025, Directories
 
 
 class Tee:
     def __init__(self, filename):
         self.terminal = sys.stdout
         self.log = open(filename, "w", encoding="utf-8")
+        self.ansi_escape = re.compile(r"\x1b\[[0-9;]*[mGJKHF]")
 
     def write(self, message):
         self.terminal.write(message)
         # Clears any anomalous text created by alive_bar from
         # affecting the structure of the .txt log
-        clean_message = re.sub(r"\x1b\[[0-9;]*[mGJKHF]", "", message)
-        clean_message = clean_message.replace(
-            "\r", "\n" if "\r" in clean_message and "\r\n" not in clean_message else ""
-        )
+        if "\r" in message:
+            return
+        clean_message = self.ansi_escape.sub("", message)
         self.log.write(clean_message)
 
     def fileno(self):
@@ -72,7 +72,7 @@ def log_attempt(
 
     duration = time.perf_counter() - kwargs.get("start_time", time.perf_counter())
     log_entry = {
-        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "timestamp": Directories.SESSION_ID_READABLE,
         "status": status,
         "prompt_id": cwe_id,
         "model": model,
@@ -89,10 +89,10 @@ def log_attempt(
     }
 
     status_messages = {
-        "SUCCESS": f"Prompt {output_file} generated in {duration:.2f}s.",
-        "FAILED": f"CRITICAL FAILURE on {cwe_id}\nError: {kwargs.get('error_msg', 'Unknown Error')}",
-        "EMPTY_RESPONSE": f"API returned SUCCESS but text was EMPTY on {cwe_id}.",
-        "REFUSAL": f"SAFETY REFUSAL for {cwe_id} by {model}.",
+        "SUCCESS": f"Prompt {output_file:<50} | Generated in {duration:>5.2f}s.",
+        "FAILED": f"CRITICAL FAILURE on {cwe_id:<50} | Error: {str(kwargs.get('error_msg', 'Unknown'))[:30]}",
+        "EMPTY_RESPONSE": f"EMPTY RESPONSE   on {cwe_id:<50} | API returned SUCCESS but text was EMPTY.",
+        "REFUSAL": f"SAFETY REFUSAL   for {cwe_id:<50} | Model: {model}",
     }
 
     for kwarg, data in metadata.items():
@@ -104,7 +104,7 @@ def log_attempt(
         file.write(json.dumps(log_entry) + "\n")
 
     if msg := status_messages.get(status):
-        print(msg)
+        print(f"\t{msg}")
 
 
 def sarif_parser(sarif_report: Path, cwe_dict: dict, model_name: str) -> Optional[list]:

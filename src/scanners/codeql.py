@@ -1,8 +1,8 @@
 import subprocess
 from pathlib import Path
 
-from audit_manager import sarif_parser
 from config import Directories
+from src.analysis.audit import sarif_parser
 
 
 # Creating CodeQl database

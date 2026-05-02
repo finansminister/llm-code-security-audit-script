@@ -3,6 +3,8 @@ import json
 import sys
 from pathlib import Path
 
+from config import Directories
+
 
 def end_of_process_integrity(final_metadata, start_metadata):
     validate_integrity(
@@ -76,30 +78,42 @@ def current_hash_values(source_code_files, master_hashes_path):
                 sha256_hash.update(byte_block)
 
         current_hash = sha256_hash.hexdigest()
-        live_hashes[file.name] = current_hash
+        rel_path = str(file.relative_to(Directories.ROOT))  # Relative Path String
+        live_hashes[rel_path] = current_hash
 
-        if not master_hashes.get(file.name):
+        master_hash_value = master_hashes.get(rel_path)
+        if not master_hash_value:
             print(
-                f"CRITICAL: {file.name} is not tracked in master_hashes.json. Please run freeze_hashes.py."
+                f"CRITICAL: {rel_path} is not tracked in master_hashes.json. Please run freeze_hashes.py."
             )
             sys.exit(1)
-        if current_hash != master_hashes[file.name]:
+        if current_hash != master_hash_value:
             print(
-                f"{file.name} has been modified since {frozen_hashes_date} and does not match up with the master hash file."
+                f"{rel_path} has been modified since {frozen_hashes_date} and does not match up with the master hash file."
             )
             print(
                 "Audit aborted due to integrity failure. Reset master hashes or revert changes."
             )
             sys.exit(1)
+
     return live_hashes, frozen_hashes_date
 
 
 def current_files(source_code_files):
-    authorized_py_files = {path.name for path in source_code_files}
-    current_py_files = {file.name for file in Path(".").glob("*.py")}
+    authorized_py_files = {
+        str(path.relative_to(Directories.ROOT)) for path in source_code_files
+    }
+    current_py_files = list(Directories.ROOT.glob("*.py")) + list(
+        Directories.ROOT.glob("src/**/*.py")
+    )
+    current_rel_paths = {
+        str(f.relative_to(Directories.ROOT))
+        for f in current_py_files
+        if "__pycache__" not in str(f)
+    }
 
-    unauthorized_files = current_py_files - authorized_py_files
-    missing_files = authorized_py_files - current_py_files
+    unauthorized_files = current_rel_paths - authorized_py_files
+    missing_files = authorized_py_files - current_rel_paths
 
     if unauthorized_files:
         print(
@@ -111,9 +125,9 @@ def current_files(source_code_files):
         print(f"CRITICAL: Missing source code file(s): {missing_files}")
         sys.exit(1)
 
-    print("Inventory Validation Successful: 0 Unauthorized files, 0 Missing files.")
+    print(f"Inventory Validation Successful: {len(current_rel_paths)} files verified.")
 
-    return current_py_files
+    return current_rel_paths
 
 
 def orchestration_metadata(source_code_files: list, master_hashes_path: Path):

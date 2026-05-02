@@ -11,6 +11,7 @@ load_dotenv()
 class Directories:
     ROOT = Path(__file__).resolve().parent
     SESSION_ID = time.strftime("%Y%m%d_%H%M%S")
+    SESSION_ID_READABLE = time.strftime("%Y-%m-%d %H:%M:%S")
 
     CODEQL_DATABASE_DIR = ROOT / "codeql-databases"
     PARENT_OUTPUT_DIR = ROOT / "llm-generated-outputs"
@@ -46,17 +47,27 @@ class Directories:
 
 class SourceCode:
     ROOT = Directories.ROOT
+    SRC = ROOT / "src"
+
+    ANALYSIS_DIR = SRC / "analysis"
+    CORE_DIR = SRC / "core"
+    LLM_DIR = SRC / "llm"
+    SCANNERS_DIR = SRC / "scanners"
 
     MAIN_PATH = ROOT / "main.py"
     CONFIG_PATH = ROOT / "config.py"
-    GENERATION_MGR_PATH = ROOT / "generation_manager.py"
-    INTEGRITY_MGR_PATH = ROOT / "integrity_manager.py"
-    CODEQL_MGR_PATH = ROOT / "codeql_manager.py"
-    OWASP_MGR_PATH = ROOT / "owasp_manager.py"
-    LLM_API_MGR_PATH = ROOT / "llm_api_manager.py"
-    AUDIT_MGR_PATH = ROOT / "audit_manager.py"
-    STAT_MGR_PATH = ROOT / "statistics_manager.py"
     FREEZE_HASHES_PATH = ROOT / "freeze_hashes.py"
+
+    INTEGRITY_MGR_PATH = CORE_DIR / "integrity.py"
+
+    GENERATION_MGR_PATH = LLM_DIR / "generator.py"
+    LLM_API_MGR_PATH = LLM_DIR / "clients.py"
+
+    CODEQL_MGR_PATH = SCANNERS_DIR / "codeql.py"
+    OWASP_MGR_PATH = SCANNERS_DIR / "owasp.py"
+
+    AUDIT_MGR_PATH = ANALYSIS_DIR / "audit.py"
+    STAT_MGR_PATH = ANALYSIS_DIR / "stats.py"
 
     @classmethod
     def source_code_check(cls):
@@ -65,7 +76,9 @@ class SourceCode:
             for path in dir(cls)
             if isinstance(getattr(cls, path), Path) and path.endswith("_PATH")
         ]
-        return source_files
+        init_files = list(cls.SRC.glob("**/__init__.py"))
+
+        return source_files + init_files
 
 
 class LLMConfig:

@@ -6,8 +6,9 @@ from scipy import stats
 from scipy.stats import chi2_contingency, kruskal
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
 
-from audit_manager import audit_stats
 from config import Directories
+
+from .audit import audit_stats
 
 
 def chi_squared_test(stat_summary: pd.DataFrame):
