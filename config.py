@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -9,24 +10,22 @@ load_dotenv()
 
 class Directories:
     ROOT = Path(__file__).resolve().parent
+    SESSION_ID = time.strftime("%Y%m%d_%H%M%S")
 
     CODEQL_DATABASE_DIR = ROOT / "codeql-databases"
-    RESULTS_DIR = ROOT / "analysis-results"
-    OUTPUT_DIR = ROOT / "llm-generated-outputs"
+    PARENT_OUTPUT_DIR = ROOT / "llm-generated-outputs"
     DATASET_DIR = ROOT / "seceval-dataset"
     RESOURCES_DIR = ROOT / "resources"
-    SESSION_DIR = ROOT / "session-logs"
 
-    MASTER_HASH_PATH = ROOT / "master_hashes.json"
-
-    SARIF_DIR = RESULTS_DIR / "sarif-reports"
-    CSV_AUDITS_DIR = RESULTS_DIR / "csv-audit-results"
+    OUTPUT_DIR = PARENT_OUTPUT_DIR / f"llm-generated-outputs-{SESSION_ID}"
+    RESULTS_DIR = OUTPUT_DIR / "analysis-results"
 
     GEMINI_DIR = OUTPUT_DIR / "gemini-generated-outputs"
     ANTHROPIC_DIR = OUTPUT_DIR / "anthropic-generated-outputs"
     MISTRAL_DIR = OUTPUT_DIR / "mistral-generated-outputs"
     META_DIR = OUTPUT_DIR / "meta-generated-outputs"
 
+    MASTER_HASH_PATH = ROOT / "master_hashes.json"
     DATASET_PATH = DATASET_DIR / "dataset.jsonl"
     OWASP_MAP_PATH = RESOURCES_DIR / "owasp2025_cwe_dict.json"
 

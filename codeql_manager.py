@@ -7,10 +7,6 @@ from config import Directories
 
 # Creating CodeQl database
 def codeql_init(database_dir: Path, output_dir: Path) -> None:
-    if database_dir.exists():
-        print(f"Database: {database_dir} already exists...")
-        return
-
     print(f"Creating CodeQL Database: {database_dir}")
     try:
         subprocess.run(
@@ -65,7 +61,7 @@ def codeql_and_parse(model_name, output_dir, cwe_dict):
     codeql_init(current_database_dir, output_dir)
 
     report_name = f"{model_name}_analysis_report.sarif"
-    report_path = Directories.SARIF_DIR / report_name
+    report_path = Directories.RESULTS_DIR / report_name
 
     print(f"Created .sarif report : {report_name}")
     print(f"At: {report_path}")

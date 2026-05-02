@@ -104,14 +104,11 @@ if __name__ == "__main__":
     TEST_MODE = False
     LIMIT = 3 if TEST_MODE else None
 
-    session_log_dir = (
-        Directories.SESSION_DIR / f"session-logs-{time.strftime('%Y%m%d_%H%M%S')}"
-    )
+    session_log_dir = Directories.OUTPUT_DIR / "session-logs"
     session_log_dir.mkdir(parents=True, exist_ok=True)
     session_jsonl_log_path = session_log_dir / "code_generation_log.jsonl"
     final_audit_results_path = (
-        Directories.CSV_AUDITS_DIR
-        / f"final_audit_results_{time.strftime('%Y%m%d_%H%M%S')}.csv"
+        Directories.RESULTS_DIR / f"final_audit_results_{Directories.SESSION_ID}.csv"
     )
     session_terminal_output = session_log_dir / "session_terminal_output.txt"
 

@@ -115,7 +115,7 @@ def anova_test(csv_audit_file: Path):
             "Statistically significant difference found between models (p-value < 0.05)"
         )
         print("Starting Tukey HSD test to determine the difference maker...")
-        tukeys_hsd(cwe_tagged_files, Directories.CSV_AUDITS_DIR)
+        tukeys_hsd(cwe_tagged_files, Directories.RESULTS_DIR)
     else:
         print("No significant difference found between models (p-value > 0.05)")
         return
@@ -129,9 +129,7 @@ def run_statistics(stats, final_audit_results):
     print("=== BEGINNING STATISTICAL AUDIT ===")
     print("=" * 60)
 
-    stat_summary_path = (
-        Directories.CSV_AUDITS_DIR / f"summary_{final_audit_results.name}"
-    )
+    stat_summary_path = Directories.RESULTS_DIR / f"summary_{final_audit_results.name}"
     summary_dataframe = audit_stats(final_audit_results, stat_summary_path)
 
     if summary_dataframe is not None:
