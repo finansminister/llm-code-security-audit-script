@@ -39,7 +39,7 @@ class Directories:
     def directories_check(cls):
         width = UIConfig.TERMINAL_WIDTH
         print("=" * width)
-        print(f"Project Root: {cls.ROOT}".center(60))
+        print(f"Project Root: {cls.ROOT}".center(width))
         print("=" * width)
         directories = [
             getattr(cls, dir_name)
@@ -50,9 +50,9 @@ class Directories:
             rel_path = directory.relative_to(cls.ROOT)
             if not directory.exists():
                 directory.mkdir(parents=True, exist_ok=True)
-                print(f"Created directory:  ./{rel_path}".center(width))
+                print(f"Created directory:  ./{rel_path}")
             else:
-                print(f"Verified directory: ./{rel_path}".center(width))
+                print(f"Verified directory: ./{rel_path}")
 
 
 class SourceCode:
