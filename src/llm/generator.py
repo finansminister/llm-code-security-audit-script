@@ -2,14 +2,20 @@ import hashlib
 import json
 import random
 import re
-import sys
 import time
 from pathlib import Path
 from typing import Any, Callable, Optional
 
-from tqdm import tqdm
+from rich.progress import (
+    BarColumn,
+    Progress,
+    TaskProgressColumn,
+    TextColumn,
+    TimeRemainingColumn,
+)
 
 from config import Directories, UIConfig
+from config import Telemetry as t
 from src.analysis.audit import log_attempt, sanitize_code
 
 
@@ -62,10 +68,9 @@ def main_api_call(
                 http_error = error_match.group()
                 # Exponential Backoff + Random Jitter to prevent server issues with multiple simultaneous calls
                 delay = (initial_delay * (2**attempt)) + random.uniform(0, 1)
-                tqdm.write(
-                    f"Server busy (HTTP: {http_error}). "
-                    f"Retrying {output_path} in {delay:.2f}s... "
-                    f"(Attempt {attempt + 1}/{max_retries})"
+                t.log(
+                    "RETRY",
+                    f"[{http_error}][/] {model_id:<25} | Busy. Retrying in {delay:.1f}s... ({attempt + 1}/{max_retries})",
                 )
                 time.sleep(delay)
             else:
@@ -99,28 +104,36 @@ def code_generation_pipeline(
             random.seed(42)  # Deterministic shuffle for consistency across models
             random.shuffle(prompts)
             prompts = prompts[:test_limit]
-            print(f"!!! TEST MODE: Limited to {test_limit} random prompts !!!")
+            t.log("INFO", f"!!! TEST MODE: Limited to {test_limit} random prompts !!!")
 
-    except FileNotFoundError:
-        print(f"{Directories.DATASET_PATH} not found...")
+    except FileNotFoundError as e:
+        t.log("ERROR", f"{Directories.DATASET_PATH} not found.", error=e)
         return None
 
     except json.JSONDecodeError as e:
-        print(f"Dataset contains malformed JSON: {e}")
+        t.log("ERROR", "Dataset contains malformed JSON", error=e)
         return None
 
     # stylistic progress bar used to display the progress of code generation
-    desc = f"ID: {model_id[:25]:<35}"
-    print("\n" * 2)
-    with tqdm(
-        total=len(prompts),
-        desc=desc,
-        file=sys.stdout,
-        bar_format="{desc} |{bar:40}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]",
-        leave=True,
-        dynamic_ncols=False,
-        ncols=UIConfig.TERMINAL_WIDTH,
+    t.rule("INFO", f"Processing Model: {model_name}")
+    with Progress(
+        TextColumn(
+            f"[{UIConfig.STATUS_STYLES.get('INFO', 'white')}]" + "{task.description}"
+        ),
+        BarColumn(bar_width=UIConfig.PROGRESS_BAR_WIDTH),
+        TaskProgressColumn(),
+        TextColumn("•"),
+        TimeRemainingColumn(),
+        console=t.console,
+        expand=True,
     ) as progress_bar:
+        label_style = UIConfig.STATUS_STYLES.get("INFO", "white")
+        model_label = f"ID: {model_id[: UIConfig.MODEL_ID_TRUNCATE]:<{UIConfig.PROGRESS_LABEL_PAD}}"
+        task_id = progress_bar.add_task(
+            f"[{label_style}]{model_label}[/]",
+            total=len(prompts),
+        )
+
         for index, data in enumerate(prompts, start=1):
             try:
                 cwe_id = (data.get("ID") or "Unknown")[:7]  # CWE-XXX
@@ -130,8 +143,10 @@ def code_generation_pipeline(
                 output_file_path = model_output_dir / output_file
 
                 if output_file_path.exists():
-                    progress_bar.write(f"Skipping prompt {index}: File already exists.")
-                    progress_bar.update(1)
+                    progress_bar.console.log(
+                        f"[dim]Skipping prompt {index}: File already exists.[/]"
+                    )
+                    progress_bar.update(task_id, advance=1)
                     continue
 
                 file_hash = main_api_call(
@@ -152,17 +167,17 @@ def code_generation_pipeline(
 
                 file_hashes[output_file] = file_hash
 
-            except json.JSONDecodeError:
-                print(f"Skipping malformed JSON at prompt: {index}")
+            except json.JSONDecodeError as e:
+                t.log("ERROR", f"Skipping malformed JSON at prompt: {index}", error=e)
             except Exception as e:
-                print(f"Error processing line {index}: {e}")
-            progress_bar.update(1)
+                t.log("ERROR", f"Error line {index}", error=e)
+            progress_bar.update(task_id, advance=1)
 
     output_manifest = log_file_name.parent / f"{model_name}_output_manifest.json"
     with open(output_manifest, "w", encoding="utf-8") as file:
         json.dump(file_hashes, file, indent=4)
-    print(f"Output hash manifest saved to: {output_manifest}")
 
+    t.log("SUCCESS", "Output hash manifest saved to:", file_path=output_manifest)
     # Closes the client if the model allows it
     if hasattr(api_client, "close"):
         api_client.close()

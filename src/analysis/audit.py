@@ -7,9 +7,10 @@ from pathlib import Path
 from typing import Any, Optional
 
 import pandas as pd
-from tqdm import tqdm
+from rich.table import Table
 
 from config import OWASP2025, Directories, UIConfig
+from config import Telemetry as t
 
 
 class Tee:
@@ -40,31 +41,6 @@ class Tee:
         self.log.close()
 
 
-def sanitize_code(generated_code: str) -> Optional[str]:
-
-    if generated_code.startswith("Refusal:") or generated_code.startswith("ERROR:"):
-        return None
-
-    pattern = r"```(?:python|py)?\s*\n?(.*?)```"
-    matches = re.findall(pattern, generated_code, re.DOTALL | re.IGNORECASE)
-
-    if matches:
-        best_match = max(matches, key=len)
-        return inspect.cleandoc(best_match)
-
-    # Fallback Filters
-    # checks if there are any stray "python" texts at the top of the code block the llm didnt indent properly
-    lines = generated_code.strip().splitlines()
-    if lines and lines[0].strip().lower() in {"python", "py", "python3"}:
-        lines = lines[1:]
-
-    # cleans any stray backticks at the top or bottom of the code block but not filtering anything inside the code block
-    cleaned = "\n".join(lines).strip().strip("`").strip()
-
-    # inspect.cleandoc() preserves the indentation of the python code
-    return inspect.cleandoc(cleaned.strip())
-
-
 def log_attempt(
     cwe_id: str,
     output_file: str,
@@ -91,12 +67,12 @@ def log_attempt(
         "finish_reason": "finish_reason",
     }
 
-    f_pad = UIConfig.FILE_NAME_PAD
-    status_messages = {
-        "SUCCESS": f"Prompt {output_file:<{f_pad}} | Generated in {duration:>5.2f}s.",
-        "FAILED": f"CRITICAL FAILURE on {cwe_id:<{f_pad}} | Error: {str(kwargs.get('error_msg', 'Unknown'))[:30]}",
-        "EMPTY_RESPONSE": f"EMPTY RESPONSE   on {cwe_id:<{f_pad}} | API returned SUCCESS but text was EMPTY.",
-        "REFUSAL": f"SAFETY REFUSAL   for {cwe_id:<{f_pad}} | Model: {model}",
+    f_trunc = UIConfig.FILE_PATH_TRUNCATE
+    status_text = {
+        "SUCCESS": f"Prompt {output_file:<{f_trunc}} | Generated in {duration:>5.2f}s.",
+        "FAILED": f"CRITICAL FAILURE on {cwe_id:<{f_trunc}} | Error: {str(kwargs.get('error_msg', 'Unknown'))[: UIConfig.ERR_MSG_TRUNCATE]}",
+        "EMPTY": f"EMPTY RESPONSE on {cwe_id:<{f_trunc}} | API returned SUCCESS but text was EMPTY.",
+        "REFUSAL": f"SAFETY REFUSAL for {cwe_id:<{f_trunc}} | Model: {model}",
     }
 
     for kwarg, data in metadata.items():
@@ -107,8 +83,58 @@ def log_attempt(
     with open(log_path, "a", encoding="utf-8") as file:
         file.write(json.dumps(log_entry) + "\n")
 
-    if msg := status_messages.get(status):
-        tqdm.write(f"\t{msg}")
+    if msg := status_text.get(status):
+        t.log(status, msg)
+
+
+def audit_stats(
+    csv_audit_file: Path, stat_summary_report_path: Path
+) -> Optional[pd.DataFrame]:
+    try:
+        df = pd.read_csv(csv_audit_file)
+    except FileNotFoundError as e:
+        t.log("ERROR", f"Audit file: {csv_audit_file} not found...", error=e)
+        return None
+
+    stat_summary = (
+        df.groupby("model")
+        .agg(
+            total_alerts=("security_issue", "count"),
+            mean_severity=("security_severity", "mean"),
+            vulnerable_files=(
+                "file_path",
+                lambda x: df.loc[x.index][df["security_issue"]]["file_path"].nunique(),
+            ),
+            total_unique_files=("file_path", "nunique"),
+        )
+        .assign(
+            vulnerability_rate=lambda x: (
+                x["vulnerable_files"] / x["total_unique_files"] * 100
+            )
+        )
+    )
+    stat_summary.to_csv(stat_summary_report_path)
+    t.log("SUCCESS", f"Stat Summary saved to: {stat_summary_report_path.name}")
+
+    # rich.progress table to showcase stats, acts like an excel-like table structure
+    table = Table(title="Final Security Audit Summary", header_style="bold magenta")
+    table.add_column("Model", style="cyan")
+    table.add_column("Vulnerability Rate (%)", justify="right", style="bold red")
+    table.add_column("Mean Severity", justify="right")
+    for model, row in stat_summary.iterrows():
+        rate = row["vulnerability_rate"]
+        severity = row["mean_severity"]
+        rate_style = (
+            "bold red" if rate > 20 else "bold yellow" if rate > 10 else "bold green"
+        )
+        table.add_row(
+            str(model),
+            f"[{rate_style}]{rate:.2f}%",
+            f"{severity:.2f}",
+        )
+    t.rule("INFO", "Stat Summary")
+    t.print(table)
+    return stat_summary
 
 
 def sarif_parser(sarif_report: Path, cwe_dict: dict, model_name: str) -> Optional[list]:
@@ -117,11 +143,11 @@ def sarif_parser(sarif_report: Path, cwe_dict: dict, model_name: str) -> Optiona
             data = json.load(file)
 
     except FileNotFoundError as e:
-        print(f"No .sarif Report Found: {e}")
+        t.log("ERROR", f"No .sarif Report Found: {e}")
         return None
 
     except json.JSONDecodeError:
-        print(f"Malformed JSON file: {sarif_report}")
+        t.log("ERROR", f"Malformed JSON file: {sarif_report}")
         return None
 
     runs = data.get("runs", [{}])[0]
@@ -186,34 +212,26 @@ def sarif_parser(sarif_report: Path, cwe_dict: dict, model_name: str) -> Optiona
     return findings
 
 
-def audit_stats(
-    csv_audit_file: Path, stat_summary_report_path: Path
-) -> Optional[pd.DataFrame]:
-    try:
-        df = pd.read_csv(csv_audit_file)
-    except FileNotFoundError:
-        print(f"Audit file: {csv_audit_file} not found...")
+def sanitize_code(generated_code: str) -> Optional[str]:
+
+    if generated_code.startswith("Refusal:") or generated_code.startswith("ERROR:"):
         return None
 
-    stat_summary = (
-        df.groupby("model")
-        .agg(
-            total_alerts=("security_issue", "count"),
-            mean_severity=("security_severity", "mean"),
-            vulnerable_files=(
-                "file_path",
-                lambda x: df.loc[x.index][df["security_issue"]]["file_path"].nunique(),
-            ),
-            total_unique_files=("file_path", "nunique"),
-        )
-        .assign(
-            vulnerability_rate=lambda x: (
-                x["vulnerable_files"] / x["total_unique_files"] * 100
-            )
-        )
-    )
+    pattern = r"```(?:python|py)?\s*\n?(.*?)```"
+    matches = re.findall(pattern, generated_code, re.DOTALL | re.IGNORECASE)
 
-    stat_summary.to_csv(stat_summary_report_path)
-    print(f"Stat Summary saved to: {stat_summary_report_path}")
-    print(f"\n{stat_summary.round(2)}")
-    return stat_summary
+    if matches:
+        best_match = max(matches, key=len)
+        return inspect.cleandoc(best_match)
+
+    # Fallback Filters
+    # checks if there are any stray "python" texts at the top of the code block the llm didnt indent properly
+    lines = generated_code.strip().splitlines()
+    if lines and lines[0].strip().lower() in {"python", "py", "python3"}:
+        lines = lines[1:]
+
+    # cleans any stray backticks at the top or bottom of the code block but not filtering anything inside the code block
+    cleaned = "\n".join(lines).strip().strip("`").strip()
+
+    # inspect.cleandoc() preserves the indentation of the python code
+    return inspect.cleandoc(cleaned.strip())

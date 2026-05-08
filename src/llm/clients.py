@@ -1,13 +1,28 @@
+import re
+
 import anthropic
 import openai
 from google import genai
 from google.genai import types
 from mistralai.client import Mistral
 
-from config import LLMConfig
+from config import LLMConfig, UIConfig
+from config import Telemetry as t
+
+
+def format_error(model_id: str, error: Exception) -> str:
+    error_str = str(error)
+    # Extracts HTTP Error codes from API responses
+    # (4\d{2}|5\d{2}) looks for three digit error codes starting with 4 or 5
+    # # i.e 429, 503 etc.
+    http_match = re.search(r"\b(4\d{2}|5\d{2})\b", error_str)
+    http_code = http_match.group(0) if http_match else "ERROR"
+    clean_error = error_str.split("{")[0].strip()
+    return f"![{http_code}][/] {model_id:< {UIConfig.MODEL_ID_TRUNCATE}} | {clean_error[: UIConfig.ERR_MSG_TRUNCATE]}"
+
 
 """
-Name Scheme:
+Name scheme and parameters:
 
 [model]_api_call(client, model_id, temperature, max_tokens, prompt)
 
@@ -15,7 +30,6 @@ Name Scheme:
 
 
 def gemini_api_call(client, model_id, temperature, max_tokens, prompt):
-
     try:
         response = client.models.generate_content(
             model=model_id,
@@ -47,7 +61,8 @@ def gemini_api_call(client, model_id, temperature, max_tokens, prompt):
 
         return content, used_tokens, finish_reason
     except Exception as e:
-        print(f"DEBUG: {model_id} API Call Failed: {e}")
+        error_msg = format_error(model_id, e)
+        t.log("ERROR", error_msg)
         return f"ERROR: {str(e)}", {"prompt": 0, "completion": 0, "total": 0}, "error"
 
 
@@ -85,7 +100,8 @@ def anthropic_api_call(
             )
         return content, used_tokens, finish_reason
     except Exception as e:
-        print(f"DEBUG: {model_id} API Call Failed: {e}")
+        error_msg = format_error(model_id, e)
+        t.log("ERROR", error_msg)
         return f"ERROR: {str(e)}", {"prompt": 0, "completion": 0, "total": 0}, "error"
 
 
@@ -118,7 +134,8 @@ def mistral_api_call(client, model_id, temperature, max_tokens, prompt):
             )
         return content, used_tokens, finish_reason
     except Exception as e:
-        print(f"DEBUG: {model_id} API Call Failed: {e}")
+        error_msg = format_error(model_id, e)
+        t.log("ERROR", error_msg)
         return f"ERROR: {str(e)}", {"prompt": 0, "completion": 0, "total": 0}, "error"
 
 
@@ -154,12 +171,12 @@ def meta_api_call(client, model_id, temperature, max_tokens, prompt):
 
         return content, used_tokens, finish_reason
     except Exception as e:
-        print(f"DEBUG: {model_id} API Call Failed: {e}")
+        error_msg = format_error(model_id, e)
+        t.log("ERROR", error_msg)
         return f"ERROR: {str(e)}", {"prompt": 0, "completion": 0, "total": 0}, "error"
 
 
 def get_clients():
-    # Client inits
     return {
         "gemini": genai.Client(api_key=LLMConfig.GEMINI_KEY),
         "anthropic": anthropic.Anthropic(api_key=LLMConfig.ANTHROPIC_KEY),

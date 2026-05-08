@@ -5,9 +5,11 @@ from pathlib import Path
 from typing import Optional
 
 from dotenv import load_dotenv
+from rich.panel import Panel
 from wakepy import keep
 
 from config import Directories, LLMConfig, UIConfig
+from config import Telemetry as t
 from src.analysis import Tee, run_statistics
 from src.core import (
     end_of_process_integrity,
@@ -23,6 +25,14 @@ from src.llm import (
     mistral_api_call,
 )
 from src.scanners import codeql_and_parse, cwe_per_owasp, load_owasp_dict
+
+
+class Styles:
+    INFO = UIConfig.STATUS_STYLES.get("INFO", "white")
+    SUBTITLE = UIConfig.STATUS_STYLES.get("SUBTITLE", "white")
+    FILE = UIConfig.STATUS_STYLES.get("FILE_NAME", "white")
+    SUCCESS = UIConfig.STATUS_STYLES.get("SUCCESS", "white")
+    PASSED = UIConfig.STATUS_STYLES.get("PASSED", "white")
 
 
 def environment_setup() -> tuple:
@@ -48,12 +58,18 @@ def resume_session(session_log_dir: Path) -> Optional[str]:
 
     if not sessions:
         return None
-
-    print(f"\n{' RECENT SESSIONS ':=^50}")
-    for index, session in enumerate(sessions, 1):
-        print(f"[{index}] {session}")
-    print(f"{'':=^50}")
-
+    session_list = "\n".join(
+        [f"[{Styles.INFO}][{i}][/] {s.name}" for i, s in enumerate(sessions, 1)]
+    )
+    t.print(
+        Panel(
+            session_list,
+            title=f"[{Styles.INFO}]Recent Audit Sessions",
+            subtitle=f"[{Styles.SUBTITLE}]Select an index to resume or leave blank for new",
+            expand=False,
+            padding=(1, 4),
+        )
+    )
     choice = input(
         "\nResume a previous session? (Enter session index [#] or leave blank for new session): "
     ).strip()
@@ -80,41 +96,43 @@ def orchestration(
 
     stats = []
     for loop_index, model in enumerate(model_configs, start=1):
-        print(
-            f"\n>>> Starting Model: {model['id']} ({loop_index}/{len(model_configs)})"
-        )
+        t.rule("INFO", f"MODEL {loop_index}/{len(model_configs)}: {model['id']}")
         output_manifest = code_generation_pipeline(
             model, api_parameters, session_jsonl_log_path, test_limit=test_limit
         )
 
-        results, report_path = codeql_and_parse(
-            model["name"], model["output_dir"], cwe_dict
-        )
-
         if output_manifest is None:
-            print(f"CRITICAL: Pipeline failed for {model['id']}. Skipping analysis.")
+            t.log(
+                "ERROR",
+                f"Pipeline failed for {model['id']}. Skipping analysis.",
+                error=RuntimeError("Manifest empty"),
+            )
             continue
 
         llm_output_integrity(output_manifest, model["output_dir"])
-
+        results, report_path = codeql_and_parse(
+            model["name"], model["output_dir"], cwe_dict
+        )
         if results:
             stats.extend(results)
 
-        print("\n" + "=" * 50)
-        print(f"Model: {model['id']} ({loop_index}/{len(model_configs)}) completed")
-        print(f"Vulnerability Report: {report_path}")
-        print("=" * 50)
+        t.print(
+            Panel(
+                f"Vulnerability Report Generated: [{Styles.FILE}]{report_path.name}[/]\n"
+                f"Integrity Check: [{Styles.PASSED}]PASSED[/]",
+                title=f"[{Styles.SUCCESS}]Completion: {model['name']}",
+                subtitle=f"[{Styles.SUBTITLE}]{model['id']}[/]",
+                border_style="green",
+                expand=False,
+            )
+        )
 
-    width = UIConfig.TERMINAL_WIDTH
-    print("\n*** ALL MODELS PROCESSED - CODE GENERATION FINISHED ***\n")
+    t.rule("SUCCESS", "ALL MODELS PROCESSED")
 
-    print("\n" + "=" * width)
-    print("=== FINAL SYSTEM STATE VALIDATION ===")
+    t.print(f"\n[{Styles.FILE}]Final System State Validation[/]")
 
     final_hashes_metadata = generate_hashes()
     end_of_process_integrity(final_hashes_metadata, start_hashes_metadata)
-
-    print("=" * width + "\n")
 
     if stats:
         run_statistics(stats, final_audit_results_path)
@@ -135,8 +153,8 @@ if __name__ == "__main__":
     )
     session_terminal_output = session_log_dir / "session_terminal_output.txt"
 
-    width = UIConfig.TERMINAL_WIDTH
-    f_pad = UIConfig.FILE_NAME_PAD
+    width = UIConfig.WIDTH
+    f_pad = UIConfig.FILE_PATH_TRUNCATE
     with keep.running():
         tee = Tee(session_terminal_output)
         original_stdout = sys.stdout
@@ -144,35 +162,30 @@ if __name__ == "__main__":
         sys.stdout = tee
         sys.stderr = tee
 
-        print("\n" + "=" * width)
-        print(f"{'TEST RUN ACTIVE' if TEST_MODE else 'FULL AUDIT START'}".center(width))
-        print(
-            f"Sample Size: {LIMIT if TEST_MODE else '121'} prompts per model".center(
-                width
-            )
-        )
-        print("=" * width + "\n")
-
-        print("\n" + "=" * width)
-        print("ORCHESTRATION SCRIPT START".center(width))
-        print(f"Timestamp: {Directories.SESSION_ID_READABLE}".center(width))
+        t.rule("INFO", f"{'TEST RUN ACTIVE' if TEST_MODE else 'FULL AUDIT START'}")
+        t.print(f"Sample Size: {LIMIT if TEST_MODE else '121'} prompts per model")
 
         if Directories.MASTER_HASH_PATH.exists():
             with open(Directories.MASTER_HASH_PATH, "r") as file:
                 master = json.load(file)
 
-            print(f"Master Baseline Date: {master.get('date')}".center(width))
-            print("-" * width)
-
-            print(f"{'AUTHORIZED SOURCE FILE':<{f_pad}} | {'SHA-256 (SNIPPET)'}")
-            print("-" * width)
-
+            baseline_info = [
+                f"[{Styles.INFO}]Baseline Date:[/] {master.get('date', 'Unknown')}\n"
+            ]
             for filename, full_hash in master.items():
                 if filename != "date":
-                    print(f"{filename:<{f_pad}} | {full_hash[:8]}")
+                    baseline_info.append(
+                        f"[{Styles.FILE}]{filename:<{f_pad}}[/] | [white]{full_hash[:12]}[/]"
+                    )
 
-        print("=" * width + "\n")
-
+            t.print(
+                Panel(
+                    "\n".join(baseline_info),
+                    title=f"[{Styles.INFO}]Master Integrity Baseline",
+                    border_style=f"{Styles.INFO}",
+                    padding=(1, 2),
+                )
+            )
         try:
             orchestration(
                 session_jsonl_log_path, final_audit_results_path, test_limit=LIMIT
@@ -181,6 +194,9 @@ if __name__ == "__main__":
             sys.stdout = original_stdout
             sys.stderr = original_stderr
             tee.close()
-            print(f"\nSession Complete. Log saved to {session_terminal_output}")
+            t.log(
+                "INFO",
+                f"\nSession Complete. Log saved to [{Styles.FILE}]{session_terminal_output}",
+            )
 
         sys.exit(0)

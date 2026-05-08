@@ -1,5 +1,5 @@
 {
-    "date": "2026-05-02 23:30:07",
+    "date": "2026-05-07 19:49:36",
     "config.py": "631e5bae9af9561f92ee9c8c1b20296ee2c25dfd9e6e21af65705a0004483f55",
     "freeze_hashes.py": "1e9677a616fe2698360676b33731ab8b8b84ffa54b476fef98ba929ae0b09dee",
     "main.py": "a94d8e25aec930e7fcd74a7ec6dd571ae713c511931dbc4cbb7c55ea6179910b",
@@ -10,7 +10,7 @@
     "src/core/__init__.py": "7504d8f26091cd9b1f286410ee6553658489e3ab4c78dd3a9864d0d0e4ce87f3",
     "src/core/integrity.py": "5fc567320547689f5959bc9c1fcbb7c1ffe6e1a2c343ee83fdbd545b12a66b1d",
     "src/llm/__init__.py": "b5dca2962039e2b49b017b5fe2e24d8a6826108f5a20ea3f4bb10aae63e190a1",
-    "src/llm/clients.py": "032b1b745041ac47e15e7b8e863079fc5eea50a48c067d84a8cc39895c0bca7a",
+    "src/llm/clients.py": "9c75b43cd0f0efecc37f827fe91d099924525764309b39cd27afb1455eb6caee",
     "src/llm/generator.py": "1e680326f7eaa0351a99a6d762cb00d56631fc7262a3d38a12589d1f804cf9f4",
     "src/scanners/__init__.py": "5231960662bc4354882a85932d3529143dd4abc1e90ea0dda736850124b9d7db",
     "src/scanners/codeql.py": "4435219adf6dc5a608655a245a390eccf2965fd4bb04226acc3b54e59751d983",

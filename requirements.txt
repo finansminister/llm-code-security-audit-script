@@ -3,8 +3,8 @@ anthropic==0.88.0
 mistralai==2.2.0
 openai=2.33.0
 python-dotenv==1.2.2
-alive-progress==3.3.0
 python-benedict==0.35.0
 scipy==1.17.1
 statsmodels==0.14.6
 wakepy==1.0.0
+rich==15.0.0

@@ -2,15 +2,83 @@ import os
 import sys
 import time
 from pathlib import Path
+from typing import Optional
 
 from dotenv import load_dotenv
+from rich.console import Console
 
 load_dotenv()
 
 
 class UIConfig:
-    TERMINAL_WIDTH = 120
-    FILE_NAME_PAD = 65
+    WIDTH = 140
+    STATUS_PAD = 15
+    ERR_MSG_TRUNCATE = 50
+    FILE_PATH_TRUNCATE = 65
+    PROGRESS_BAR_WIDTH = 40
+    MODEL_ID_TRUNCATE = 25
+    PROGRESS_LABEL_PAD = 35
+
+    # STYLE SHEET FOR STATUS UPDATES
+    # rich module style colors and font weight
+    STATUS_STYLES = {
+        "SUCCESS": "bold green",
+        "ERROR": "bold red",
+        "EMPTY": "bold yellow",
+        "REFUSAL": "bold magenta",
+        "RETRY": "bold orange3",
+        "INFO": "bold cyan",
+        "FILE_NAME": "cyan",
+        "SUBTITLE": "dim white",
+        "PASSED": "green",
+    }
+
+
+class Telemetry:
+    # rich.progress console variable used for prints and status updates
+    console = Console(width=UIConfig.WIDTH, highlight=False)
+
+    @classmethod
+    def _format(cls, status: str, message: str) -> str:
+        style = UIConfig.STATUS_STYLES.get(status, "white")
+        return f"[{style}]{status:<{UIConfig.STATUS_PAD}}[/] | {message}"
+
+    @classmethod
+    def log(
+        cls,
+        status: str,
+        message: str,
+        error: Optional[BaseException] = None,
+        file_path: Optional[Path] = None,
+    ):
+
+        options = {
+            "error": {
+                "active": error is not None,
+                "content": f"{message} | Error: {str(error).replace(chr(10), ' ').strip()[: UIConfig.ERR_MSG_TRUNCATE]}",
+            },
+            "file_path": {
+                "active": file_path is not None,
+                "content": f"{message} [{UIConfig.STATUS_STYLES.get('FILE_NAME', 'white')}]{file_path.name if file_path else ''}[/]",
+            },
+        }
+        final_message = message
+
+        for key in options.keys():
+            if options[key]["active"]:
+                final_message = options[key]["content"]
+                break
+
+        cls.console.log(cls._format(status, final_message))
+
+    @classmethod
+    def print(cls, *args, **kwargs):
+        cls.console.print(*args, **kwargs)
+
+    @classmethod
+    def rule(cls, rule_type: str, title: str = "", **kwargs):
+        style = UIConfig.STATUS_STYLES.get(rule_type, "white")
+        cls.console.rule(f"[{style}]{title}", style=style, **kwargs)
 
 
 class Directories:
@@ -57,10 +125,8 @@ class Directories:
 
     @classmethod
     def directories_check(cls):
-        width = UIConfig.TERMINAL_WIDTH
-        print("=" * width)
-        print(f"Project Root: {cls.ROOT}".center(width))
-        print("=" * width)
+        Telemetry.rule("INFO", "Environment Directory Check")
+
         directories = [
             getattr(cls, dir_name)
             for dir_name in dir(cls)
@@ -70,9 +136,9 @@ class Directories:
             rel_path = directory.relative_to(cls.ROOT)
             if not directory.exists():
                 directory.mkdir(parents=True, exist_ok=True)
-                print(f"Created directory:  ./{rel_path}")
+                Telemetry.log("INFO", f"Created directory:  ./{rel_path}")
             else:
-                print(f"Verified directory: ./{rel_path}")
+                Telemetry.log("SUCCESS", f"Verified directory: ./{rel_path}")
 
 
 class SourceCode:
@@ -136,10 +202,10 @@ class LLMConfig:
         try:
             return {
                 "temperature": float(os.getenv("GLOBAL_TEMPERATURE", "0.1")),
-                "max_tokens": int(os.getenv("MAX_TOKENS", "2048")),
+                "max_tokens": int(os.getenv("MAX_TOKENS", "4096")),
             }
         except ValueError as e:
-            print(f"CRITICAL ERROR: Invalid value-type in .env file: {e}")
+            Telemetry.log("ERROR", "Invalid value-type in .env file", error=e)
             sys.exit(1)
 
     @classmethod
