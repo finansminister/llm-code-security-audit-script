@@ -2,13 +2,13 @@ import json
 import shutil
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from dotenv import load_dotenv
 from rich.panel import Panel
 from wakepy import keep
 
-from config import Directories, LLMConfig, UIConfig
+from config import Directories, LLMConfig, Styles, UIConfig
 from config import Telemetry as t
 from src.analysis import Tee, run_statistics
 from src.core import (
@@ -26,13 +26,7 @@ from src.llm import (
 )
 from src.scanners import codeql_and_parse, cwe_per_owasp, load_owasp_dict
 
-
-class Styles:
-    INFO = UIConfig.STATUS_STYLES.get("INFO", "white")
-    SUBTITLE = UIConfig.STATUS_STYLES.get("SUBTITLE", "white")
-    FILE = UIConfig.STATUS_STYLES.get("FILE_NAME", "white")
-    SUCCESS = UIConfig.STATUS_STYLES.get("SUCCESS", "white")
-    PASSED = UIConfig.STATUS_STYLES.get("PASSED", "white")
+S: Any = Styles
 
 
 def environment_setup() -> tuple:
@@ -59,13 +53,13 @@ def resume_session(session_log_dir: Path) -> Optional[str]:
     if not sessions:
         return None
     session_list = "\n".join(
-        [f"[{Styles.INFO}][{i}][/] {s.name}" for i, s in enumerate(sessions, 1)]
+        [f"[{S.INFO}][{i}][/] {session.name}" for i, session in enumerate(sessions, 1)]
     )
     t.print(
         Panel(
             session_list,
-            title=f"[{Styles.INFO}]Recent Audit Sessions",
-            subtitle=f"[{Styles.SUBTITLE}]Select an index to resume or leave blank for new",
+            title=f"[{S.INFO}]Recent Audit Sessions",
+            subtitle=f"[{S.SUBTITLE}]Select an index to resume or leave blank for new",
             expand=False,
             padding=(1, 4),
         )
@@ -118,10 +112,10 @@ def orchestration(
 
         t.print(
             Panel(
-                f"Vulnerability Report Generated: [{Styles.FILE}]{report_path.name}[/]\n"
-                f"Integrity Check: [{Styles.PASSED}]PASSED[/]",
-                title=f"[{Styles.SUCCESS}]Completion: {model['name']}",
-                subtitle=f"[{Styles.SUBTITLE}]{model['id']}[/]",
+                f"Vulnerability Report Generated: [{S.FILE}]{report_path.name}[/]\n"
+                f"Integrity Check: [{S.PASSED}]PASSED[/]",
+                title=f"[{S.SUCCESS}]Completion: {model['name']}",
+                subtitle=f"[{S.SUBTITLE}]{model['id']}[/]",
                 border_style="green",
                 expand=False,
             )
@@ -129,7 +123,7 @@ def orchestration(
 
     t.rule("SUCCESS", "ALL MODELS PROCESSED")
 
-    t.print(f"\n[{Styles.FILE}]Final System State Validation[/]")
+    t.print(f"\n[{S.FILE}]Final System State Validation[/]")
 
     final_hashes_metadata = generate_hashes()
     end_of_process_integrity(final_hashes_metadata, start_hashes_metadata)
@@ -170,19 +164,19 @@ if __name__ == "__main__":
                 master = json.load(file)
 
             baseline_info = [
-                f"[{Styles.INFO}]Baseline Date:[/] {master.get('date', 'Unknown')}\n"
+                f"[{S.INFO}]Baseline Date:[/] {master.get('date', 'Unknown')}\n"
             ]
             for filename, full_hash in master.items():
                 if filename != "date":
                     baseline_info.append(
-                        f"[{Styles.FILE}]{filename:<{f_pad}}[/] | [white]{full_hash[:12]}[/]"
+                        f"[{S.FILE}]{filename:<{f_pad}}[/] | [white]{full_hash[:12]}[/]"
                     )
 
             t.print(
                 Panel(
                     "\n".join(baseline_info),
-                    title=f"[{Styles.INFO}]Master Integrity Baseline",
-                    border_style=f"{Styles.INFO}",
+                    title=f"[{S.INFO}]Master Integrity Baseline",
+                    border_style=f"{S.INFO}",
                     padding=(1, 2),
                 )
             )
@@ -196,7 +190,7 @@ if __name__ == "__main__":
             tee.close()
             t.log(
                 "INFO",
-                f"\nSession Complete. Log saved to [{Styles.FILE}]{session_terminal_output}",
+                f"\nSession Complete. Log saved to [{S.FILE}]{session_terminal_output}",
             )
 
         sys.exit(0)

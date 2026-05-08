@@ -28,10 +28,18 @@ class UIConfig:
         "REFUSAL": "bold magenta",
         "RETRY": "bold orange3",
         "INFO": "bold cyan",
-        "FILE_NAME": "cyan",
+        "FILE": "cyan",
         "SUBTITLE": "dim white",
         "PASSED": "green",
     }
+
+
+class Styles:
+    pass
+
+
+for key, value in UIConfig.STATUS_STYLES.items():
+    setattr(Styles, key, value)
 
 
 class Telemetry:

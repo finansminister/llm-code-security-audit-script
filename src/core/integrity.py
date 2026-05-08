@@ -2,8 +2,12 @@ import hashlib
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
-from config import Directories
+from config import Directories, Styles
+from config import Telemetry as t
+
+S: Any = Styles
 
 
 def end_of_process_integrity(final_metadata, start_metadata):
@@ -17,7 +21,7 @@ def end_of_process_integrity(final_metadata, start_metadata):
 
 def llm_output_integrity(manifest_path: Path, output_dir: Path) -> None:
 
-    print(f"Verifying output integrity of: {output_dir}")
+    t.log("INFO", "Verifying output integrity of:", file_path=output_dir)
 
     with open(manifest_path, "r") as file:
         original_hashes = json.load(file)
@@ -31,8 +35,9 @@ def llm_output_integrity(manifest_path: Path, output_dir: Path) -> None:
     validate_integrity(
         original_hashes, current_hashes, context=f"LLM Output -> {output_dir.name}"
     )
-    print(
-        f"SUCCESS: All generated files for {output_dir.name} verified as bit-identical."
+    t.log(
+        "SUCCESS",
+        f"All generated files for [{S.FILE}]{output_dir.name}[/] verified as bit-identical.",
     )
 
 
