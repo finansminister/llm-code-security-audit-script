@@ -61,8 +61,9 @@ When a statistically significant difference is found between models ($p < 0.05$)
 To begin a full audit run:
 
 ```bash
-python main.py
+python3 main.py
 
 ```
+### In case of interruption
 
 To resume a previous audit session, follow the on-screen prompts to select a recent session ID from the `Recent Audit Sessions` panel.
