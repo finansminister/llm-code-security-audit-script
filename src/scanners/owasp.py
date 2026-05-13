@@ -75,13 +75,14 @@ def load_owasp_dict(cwe_dict_file: Path) -> dict:
         with open(cwe_dict_file, "r", encoding="utf-8") as file:
             cwe_dict = json.load(file)
 
-        t.log("INFO", "Using cached OWASP 2025 CWE map:", file_path=cwe_dict_file)
+        t.log("INFO", "Using cached OWASP 2025 CWE map: {}", target=cwe_dict_file.name)
         return cwe_dict
 
     except (FileNotFoundError, json.JSONDecodeError):
         t.log(
             "INFO",
-            f"[{S.FILE}]{cwe_dict_file.name}[/] not found. Generating new OWASP 2025 CWE dictionary...",
+            "{} not found. Generating new OWASP 2025 CWE dictionary...",
+            target=cwe_dict_file.name,
         )
         cwe_dict = generate_cwe_dict()
 
@@ -94,7 +95,7 @@ def cwe_per_owasp(cwe_dict: dict, cwe_dict_file_name: str, summary_dir: Path) ->
     metadata_path = summary_dir / "cwe_per_owasp.txt"
     counts = Counter(cwe_dict.values())
 
-    t.log("INFO", "Metadata saved to:", file_path=metadata_path)
+    t.log("INFO", "Metadata saved to: {}", target=metadata_path)
 
     with open(metadata_path, "w", encoding="utf-8") as file:
         file.write("=== EXPERIMENT METADATA ===\n")

@@ -51,7 +51,8 @@ def llm_output_integrity(manifest_path: Path, output_dir: Path) -> None:
     )
     t.log(
         "SUCCESS",
-        f"All generated files for [{S.FILE}]{output_dir.name}[/] verified as bit-identical.",
+        "All generated files for {} verified as bit-identical.",
+        target=output_dir.name,
     )
 
 
@@ -121,7 +122,7 @@ def current_hash_values(source_code_files, master_hashes_path):
         if current_hash != master_hash_value:
             t.log(
                 "ERROR",
-                f"{rel_path} has been modified since {frozen_hashes_date} and does not match up with the master hash file.",
+                f"{rel_path} has been modified since {frozen_hashes_date}\nand does not match up with the master hash file.",
             )
             t.log(
                 "ERROR",

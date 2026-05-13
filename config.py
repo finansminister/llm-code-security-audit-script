@@ -67,31 +67,41 @@ class Telemetry:
         message: str,
         error: Optional[BaseException] = None,
         file_path: Optional[Path] = None,
+        target: str | Path | None = None,
     ):
 
+        # the content of the message ignores brackets as to not adjust the color of the log
+        # without escape = Error [429]: Too many requests -> Error : Too many requests
+        # with escape = Error [429]: Too many requests -> Error [429]: Too many requests
+        validated_msg = escape(message)
         options = {
             "error": {
                 "active": error is not None,
-                "content": f"{message} | Error: {str(error).replace(chr(10), ' ').strip()[: UIConfig.ERR_MSG_TRUNCATE]}",
+                "content": f"{validated_msg} | Error: {str(error).replace(chr(10), ' ').strip()[: UIConfig.ERR_MSG_TRUNCATE]}",
             },
             "file_path": {
                 "active": file_path is not None,
-                "content": f"{message} [{cls._style('FILE')}]{file_path.name if file_path else ''}[/]",
+                "content": f"{validated_msg} [{cls._style('FILE')}]{file_path.name if file_path else ''}[/]",
+            },
+            "target": {
+                "active": target is not None,
+                "content": (
+                    validated_msg.format(
+                        f"[{cls._style('FILE')}]{escape(str(target))}[/]"
+                    )
+                    if "{}" in validated_msg
+                    else f"{validated_msg} [{cls._style('FILE')}]{escape(str(target))}[/]"
+                ),
             },
         }
-        final_message = message
-
+        final_message = validated_msg
         for key in options.keys():
             if options[key]["active"]:
                 final_message = options[key]["content"]
                 break
 
-        # the content of the message ignores brackets as to not adjust the color of the log
-        # without escape = Error [429]: Too many requests -> Error : Too many requests
-        # with escape = Error [429]: Too many requests -> Error [429]: Too many requests
-        validated_message = escape(final_message)
         cls.console.log(
-            f"[{cls._style(status)}]{status:<{UIConfig.STATUS_PAD}} | {validated_message}[/]"
+            f"[{cls._style(status)}]{status:<{UIConfig.STATUS_PAD}}[/] | {final_message}"
         )
 
     @classmethod
@@ -166,9 +176,9 @@ class Directories:
             rel_path = directory.relative_to(cls.ROOT)
             if not directory.exists():
                 directory.mkdir(parents=True, exist_ok=True)
-                Telemetry.log("INFO", f"Created directory:  ./{rel_path}")
+                Telemetry.log("SUCCESS", "Created directory:  ./", file_path=rel_path)
             else:
-                Telemetry.log("SUCCESS", f"Verified directory: ./{rel_path}")
+                Telemetry.log("SUBTITLE", "Verified directory: ./", file_path=rel_path)
 
 
 class SourceCode:

@@ -34,7 +34,7 @@ def codeql_init(database_dir: Path, output_dir: Path) -> None:
 
 # Starting codeql analysis
 def codeql_analysis(database_dir: Path, report_path: Path) -> None:
-    with t.status("INFO", f"Analyzing CodeQL Database: {database_dir}"):
+    with t.status("INFO", f"Analyzing CodeQL Database: [{S.FILE}]{database_dir}[/]"):
         try:
             subprocess.run(
                 [
@@ -58,7 +58,7 @@ def codeql_analysis(database_dir: Path, report_path: Path) -> None:
 
 
 def codeql_and_parse(model_name, output_dir, cwe_dict):
-    t.log("INFO", "Starting CodeQL Analysis for:", file_path=model_name)
+    t.log("INFO", f"Starting CodeQL Analysis for: {model_name}")
 
     current_database_dir = Directories.CODEQL_DATABASE_DIR / f"database_{model_name}"
 

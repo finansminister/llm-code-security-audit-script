@@ -19,7 +19,7 @@ class Tee(io.TextIOBase):
         super().__init__()  # Initialize the base class
         self.terminal = sys.stdout
         self.log = open(filename, "w", encoding="utf-8")
-        self.ansi_escape = re.compile(r"\x1b\[[0-9;]*[mGJKHF]")
+        self.ansi_escape = re.compile(r"\x1b\[[0-9;]*[mGJKHFlh]")
 
     def write(self, message):
         self.terminal.write(message)
@@ -151,7 +151,7 @@ def sarif_parser(sarif_report: Path, cwe_dict: dict, model_name: str) -> Optiona
         return None
 
     except json.JSONDecodeError as e:
-        t.log("ERROR", "Malformed JSON file:", error=e, file_path=sarif_report)
+        t.log("ERROR", f"Malformed JSON file: {sarif_report}", error=e)
         return None
 
     runs = data.get("runs", [{}])[0]
