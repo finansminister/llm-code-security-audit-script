@@ -190,7 +190,8 @@ if __name__ == "__main__":
             tee.close()
             t.log(
                 "INFO",
-                f"\nSession Complete. Log saved to [{S.FILE}]{session_terminal_output}",
+                "Session Complete. Log saved to",
+                file_path=session_terminal_output,
             )
 
         sys.exit(0)

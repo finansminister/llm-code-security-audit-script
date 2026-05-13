@@ -32,7 +32,7 @@ class UIConfig:
         "SUBTITLE": "dim white",
         "PASSED": "green",
         "SIGNIFICANT": "bold sky_blue3",
-        "INSIGNIFICAT": "italic dim white",
+        "INSIGNIFICANT": "italic dim white",
     }
 
 

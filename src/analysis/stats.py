@@ -16,6 +16,19 @@ from .audit import audit_stats
 S: Any = Styles
 
 
+def _stat_panel(p_value: float, statistic: float, test_type: str, result_text: str):
+    style = S.SIGNIFICANT if p_value < 0.05 else S.INSIGNIFICANT
+    t.print(
+        Panel(
+            f"Stats: [bold]{statistic:.4f}[/]\n"
+            f"p-value: [{style}]{p_value:.4f}[/]\n\n"
+            f"[{style}]{result_text}[/]",
+            title=f"[{style}]{test_type}",
+            expand=False,
+        ),
+    )
+
+
 def chi_squared_test(stat_summary: pd.DataFrame):
 
     if len(stat_summary) < 2:
@@ -35,23 +48,12 @@ def chi_squared_test(stat_summary: pd.DataFrame):
     chi2_table: Any = chi2_contingency(contingency_table)
     chi2 = float(chi2_table.statistic)
     p_val = float(chi2_table.pvalue)
-    significant_p_val = p_val < 0.05
-    style = S.SIGNIFICANT if significant_p_val else S.INSIGNIFICANT
     result_text = (
         "Significant difference in vulnerability rates."
-        if significant_p_val
+        if p_val < 0.05
         else "Rates are statistically similar."
     )
-
-    t.print(
-        Panel(
-            f"Stats: [bold]{chi2:.4f}[/]\n"
-            f"p-value: [{style}]{p_val:.4f}[/]\n\n"
-            f"[{style}]{result_text}[/]",
-            title=f"[{style}]Chi Square Test",
-            expand=False,
-        ),
-    )
+    _stat_panel(p_val, chi2, "Chi Squared", result_text)
 
 
 def kruskal_wallis_test(df: pd.DataFrame):
@@ -70,13 +72,12 @@ def kruskal_wallis_test(df: pd.DataFrame):
 
     h_stat, p_val = kruskal(*model_groups)
 
-    print(f"H-statistic: {h_stat:.4f}")
-    print(f"p-value: {p_val:.4f}")
-
-    if p_val < 0.05:
-        print("The median severity differs across models.")
-    else:
-        print("The median severity is statistically similar.")
+    result_text = (
+        "The median severity differs across models."
+        if p_val < 0.05
+        else "The median severity is statistically similar."
+    )
+    _stat_panel(p_val, h_stat, "Kruskal Wallis", result_text)
 
 
 def tukeys_hsd(cwe_tagged_files, tukey_output_path: Path):
@@ -91,26 +92,38 @@ def tukeys_hsd(cwe_tagged_files, tukey_output_path: Path):
 
     tukey_file_name = tukey_output_path / "tukey_hsd_results.csv"
     tukey_df.to_csv(tukey_file_name, index=False)
-    print("\n--- TUKEY HSD POST-HOC TEST ---")
-    print(tukey)
-    print(f"Tukey HSD results saved to: {tukey_file_name.name}")
+    t.log("INFO", "TUKEY HSD POST-HOC TEST")
+    t.print(tukey)
+    t.log("SUCCESS", "Tukey HSD results saved to:", file_path=tukey_file_name)
 
 
 def anova_test(csv_audit_file: Path):
-    try:
-        df = pd.read_csv(csv_audit_file)
-    except FileNotFoundError:
-        print(f"Audit file: {csv_audit_file} not found...")
-        return
+    df = pd.read_csv(csv_audit_file)
 
     cwe_tagged_files = df[df["security_issue"]]
 
     if cwe_tagged_files.empty:
-        print("No CodeQL alerts were found. ANOVA skipped...")
+        t.log("EMPTY", "No CodeQL alerts were found. ANOVA skipped...")
         return
 
-    print("\n--- MODEL STATISTICS (Vulnerable Files Only) ---")
-    print(cwe_tagged_files.groupby("model")["security_severity"].describe())
+    t.rule("INFO", "MODEL SEVERITY DESCRIPTION")
+
+    desc = cwe_tagged_files.groupby("model")["security_severity"].describe()
+    table = Table(title="Security Severity Metrics", header_style=f"{S.INFO}")
+
+    columns = ["Models", "Count", "Mean", "Std", "Min", "Max"]
+    for col in columns:
+        table.add_column(col)
+
+    for model, row in desc.iterrows():
+        table.add_row(
+            str(model),
+            f"{row['count']:.0f}",
+            f"{row['mean']:.2f}",
+            f"{row['std']:.2f}",
+            f"{row['min']:.1f}",
+            f"{row['max']:.1f}",
+        )
 
     model_groups = [
         pd.Series(group["security_severity"]).to_numpy()
@@ -120,31 +133,29 @@ def anova_test(csv_audit_file: Path):
 
     # Descibes the statistics regarding the security_severity scores for each CodeQL alert
     if len(model_groups) < 2:
-        print(
-            "At least two models must have CodeQL alerts for comparison. ANOVA skipped..."
+        t.log(
+            "ERROR",
+            "At least two models must have CodeQL alerts for comparison. ANOVA skipped...",
         )
     f_stat, p_val = stats.f_oneway(*model_groups)
 
-    print(f"\nANOVA Test Results:\nF-statistic: {f_stat:.4f}\np-value: {p_val:.4f}")
+    result_text = (
+        "Statistically significant difference found between models."
+        if p_val < 0.05
+        else "No significant difference found between models."
+    )
 
+    _stat_panel(p_val, f_stat, "ANOVA Test", result_text)
     if p_val < 0.05:
-        print(
-            "Statistically significant difference found between models (p-value < 0.05)"
-        )
-        print("Starting Tukey HSD test to determine the difference maker...")
         tukeys_hsd(cwe_tagged_files, Directories.RESULTS_DIR)
-    else:
-        print("No significant difference found between models (p-value > 0.05)")
-        return
 
 
 def run_statistics(stats, final_audit_results):
     audit_dataframe = pd.DataFrame(stats)
     audit_dataframe.to_csv(final_audit_results, index=False)
-    print(f"Final dataset saved to {final_audit_results.name}")
-    print("\n" + "=" * 60)
-    print("=== BEGINNING STATISTICAL AUDIT ===")
-    print("=" * 60)
+
+    t.log("SUCCESS", "Final dataset saved to", file_path=final_audit_results)
+    t.rule("INFO", "STATISTICAL AUDIT")
 
     stat_summary_path = Directories.RESULTS_DIR / f"summary_{final_audit_results.name}"
     summary_dataframe = audit_stats(final_audit_results, stat_summary_path)
@@ -153,5 +164,6 @@ def run_statistics(stats, final_audit_results):
         chi_squared_test(summary_dataframe)
 
     anova_test(final_audit_results)
-
     kruskal_wallis_test(audit_dataframe)
+
+    t.log("SUCCESS", "Statistical audit complete.")
