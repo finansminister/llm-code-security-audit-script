@@ -143,11 +143,11 @@ def sarif_parser(sarif_report: Path, cwe_dict: dict, model_name: str) -> Optiona
             data = json.load(file)
 
     except FileNotFoundError as e:
-        t.log("ERROR", f"No .sarif Report Found: {e}")
+        t.log("ERROR", "No .sarif Report Found:", error=e)
         return None
 
-    except json.JSONDecodeError:
-        t.log("ERROR", f"Malformed JSON file: {sarif_report}")
+    except json.JSONDecodeError as e:
+        t.log("ERROR", "Malformed JSON file:", error=e, file_path=sarif_report)
         return None
 
     runs = data.get("runs", [{}])[0]

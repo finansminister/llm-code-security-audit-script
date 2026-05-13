@@ -2,21 +2,28 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+from rich.panel import Panel
+from rich.table import Table
 from scipy import stats
 from scipy.stats import chi2_contingency, kruskal
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
 
-from config import Directories
+from config import Directories, Styles
+from config import Telemetry as t
 
 from .audit import audit_stats
+
+S: Any = Styles
 
 
 def chi_squared_test(stat_summary: pd.DataFrame):
 
     if len(stat_summary) < 2:
-        print(
-            "At least two models must have CodeQL alerts for comparison. Chi-Squared skipped..."
+        t.log(
+            "ERROR",
+            "Insufficient data for Chi² (need 2+ models for comparison).",
         )
+        return
 
     vulnerable = stat_summary["vulnerable_files"].tolist()
     clean = (
@@ -28,25 +35,34 @@ def chi_squared_test(stat_summary: pd.DataFrame):
     chi2_table: Any = chi2_contingency(contingency_table)
     chi2 = float(chi2_table.statistic)
     p_val = float(chi2_table.pvalue)
+    significant_p_val = p_val < 0.05
+    style = S.SIGNIFICANT if significant_p_val else S.INSIGNIFICANT
+    result_text = (
+        "Significant difference in vulnerability rates."
+        if significant_p_val
+        else "Rates are statistically similar."
+    )
 
-    print(f"Chi-Squared Statistic: {chi2:.4f}")
-    print(f"p-value: {p_val:.4f}")
-
-    if p_val < 0.05:
-        print(
-            "Significant statistical difference found, model choice affects the probability of vulnerabilities."
-        )
-    else:
-        print("No significat statistical difference in rates of vulnerabilities.")
+    t.print(
+        Panel(
+            f"Stats: [bold]{chi2:.4f}[/]\n"
+            f"p-value: [{style}]{p_val:.4f}[/]\n\n"
+            f"[{style}]{result_text}[/]",
+            title=f"[{style}]Chi Square Test",
+            expand=False,
+        ),
+    )
 
 
 def kruskal_wallis_test(df: pd.DataFrame):
     cwe_tagged = df[df["security_issue"]]
 
     if len(cwe_tagged) < 2:
-        print(
-            "At least two models must have CodeQL alerts for comparison. Kruskal-Wallis skipped..."
+        t.log(
+            "ERROR",
+            "At least two models must have CodeQL alerts for comparison. Kruskal-Wallis skipped...",
         )
+        return
 
     model_groups = [
         group["security_severity"].tolist() for _, group in cwe_tagged.groupby("model")

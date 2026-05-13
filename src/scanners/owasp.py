@@ -4,12 +4,15 @@ import re
 import time
 from collections import Counter
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import requests
 from bs4 import BeautifulSoup
 
-from config import OWASP2025
+from config import OWASP2025, Styles
+from config import Telemetry as t
+
+S: Any = Styles
 
 
 def owasp_scrape(a_code: str, url: str, max_retries: int) -> Optional[str]:
@@ -26,8 +29,9 @@ def owasp_scrape(a_code: str, url: str, max_retries: int) -> Optional[str]:
                 delay = (2**attempt) + random.uniform(0, 1)
                 time.sleep(delay)
             else:
-                print(
-                    f"Critical Failure: Failed to retrieve {a_code} after {max_retries} attempts..."
+                t.log(
+                    "EMPTY",
+                    f"Failed to retrieve {a_code} after {max_retries} attempts...",
                 )
     return None
 
@@ -71,12 +75,13 @@ def load_owasp_dict(cwe_dict_file: Path) -> dict:
         with open(cwe_dict_file, "r", encoding="utf-8") as file:
             cwe_dict = json.load(file)
 
-        print(f"Using cached OWASP 2025 CWE map: {cwe_dict_file.name}")
+        t.log("INFO", "Using cached OWASP 2025 CWE map:", file_path=cwe_dict_file)
         return cwe_dict
 
     except (FileNotFoundError, json.JSONDecodeError):
-        print(
-            f"{cwe_dict_file.name} not found. Generating new OWASP 2025 CWE dictionary..."
+        t.log(
+            "INFO",
+            f"[{S.FILE}]{cwe_dict_file.name}[/] not found. Generating new OWASP 2025 CWE dictionary...",
         )
         cwe_dict = generate_cwe_dict()
 
@@ -89,7 +94,7 @@ def cwe_per_owasp(cwe_dict: dict, cwe_dict_file_name: str, summary_dir: Path) ->
     metadata_path = summary_dir / "cwe_per_owasp.txt"
     counts = Counter(cwe_dict.values())
 
-    print(f"Metadata saved to: {metadata_path}")
+    t.log("INFO", "Metadata saved to:", file_path=metadata_path)
 
     with open(metadata_path, "w", encoding="utf-8") as file:
         file.write("=== EXPERIMENT METADATA ===\n")

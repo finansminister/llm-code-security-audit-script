@@ -31,6 +31,8 @@ class UIConfig:
         "FILE": "cyan",
         "SUBTITLE": "dim white",
         "PASSED": "green",
+        "SIGNIFICANT": "bold sky_blue3",
+        "INSIGNIFICAT": "italic dim white",
     }
 
 
@@ -46,10 +48,10 @@ class Telemetry:
     # rich.progress console variable used for prints and status updates
     console = Console(width=UIConfig.WIDTH, highlight=False)
 
+    # internal function to calculate style colors with UIConfig.STATUS_STYLES list of colours for rich module
     @classmethod
-    def _format(cls, status: str, message: str) -> str:
-        style = UIConfig.STATUS_STYLES.get(status, "white")
-        return f"[{style}]{status:<{UIConfig.STATUS_PAD}}[/] | {message}"
+    def _style(cls, status: str):
+        return UIConfig.STATUS_STYLES.get(status, "white")
 
     @classmethod
     def log(
@@ -77,7 +79,9 @@ class Telemetry:
                 final_message = options[key]["content"]
                 break
 
-        cls.console.log(cls._format(status, final_message))
+        cls.console.log(
+            f"[{cls._style(status)}]{status:<{UIConfig.STATUS_PAD}}[/] | {final_message}"
+        )
 
     @classmethod
     def print(cls, *args, **kwargs):
@@ -85,8 +89,15 @@ class Telemetry:
 
     @classmethod
     def rule(cls, rule_type: str, title: str = "", **kwargs):
-        style = UIConfig.STATUS_STYLES.get(rule_type, "white")
-        cls.console.rule(f"[{style}]{title}", style=style, **kwargs)
+        cls.console.rule(
+            f"[{cls._style(rule_type)}]{title}", style=cls._style(rule_type), **kwargs
+        )
+
+    @classmethod
+    def status(cls, status_type: str, content: str, spinner: str = "dots"):
+        return cls.console.status(
+            f"[{cls._style(status_type)}]{content}", spinner=spinner
+        )
 
 
 class Directories:

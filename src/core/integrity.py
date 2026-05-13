@@ -4,6 +4,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from rich.panel import Panel
+
 from config import Directories, Styles
 from config import Telemetry as t
 
@@ -16,6 +18,18 @@ def end_of_process_integrity(final_metadata, start_metadata):
         final_metadata["live_hashes"],
         context="System Source Code:",
         source_code=True,
+    )
+
+    t.print(
+        Panel(
+            f"[{S.SUCCESS}]Initial and Final System States match.[/]\n"
+            f"Verified Files: {len(final_metadata['live_hashes'])}\n"
+            f"Baseline Date: {final_metadata['master_hashes_date']}",
+            title=f"[{S.SUCCESS}]INTEGRITY CHECK PASSED",
+            border_style="green",
+            expand=False,
+            padding=(1, 2),
+        )
     )
 
 
@@ -47,7 +61,6 @@ def validate_integrity(
 
     missing = baseline_hashes.keys() - live_hashes.keys()
     added = live_hashes.keys() - baseline_hashes.keys()
-
     same = baseline_hashes.keys() & live_hashes.keys()
     modified = [file for file in same if baseline_hashes[file] != live_hashes[file]]
 
@@ -55,20 +68,32 @@ def validate_integrity(
     if source_code:
         drifts["UNAUTHORIZED"] = added
 
-    current_drifts = {reason: file for reason, file in drifts.items() if file}
+    current_drifts = {reason: list(files) for reason, files in drifts.items() if files}
     if current_drifts:
-        print(f"CRITICAL INTEGRITY FAILURE: {context}")
-        for reason, file in current_drifts.items():
-            print(f"-> {reason}: {list(file)}")
+        error_content = f"[{S.ERROR}]Location:[/] {context}\n\n"
+        for reason, files in current_drifts.items():
+            error_content += f"[{S.ERROR}]-> {reason}:[/] {files}\n"
+        t.print(
+            Panel(
+                error_content,
+                title=f"[{S.ERROR}]CRITICAL INTEGRITY BREACH",
+                border_style="red",
+                expand=False,
+                padding=(1, 2),
+            )
+        )
         sys.exit(1)
 
 
 def current_hash_values(source_code_files, master_hashes_path):
     live_hashes = {}
     if not master_hashes_path.exists():
-        print(
-            "WARNING: No master .json hashes file found. Proceeding without version validation."
+        t.log(
+            "EMPTY",
+            "Master hashes file not found:",
+            file_path=Directories.MASTER_HASH_PATH,
         )
+        t.log("EMPTY", "Proceeding without date validation.")
         master_hashes = {}
     else:
         with open(master_hashes_path, "r") as file:
@@ -83,21 +108,24 @@ def current_hash_values(source_code_files, master_hashes_path):
                 sha256_hash.update(byte_block)
 
         current_hash = sha256_hash.hexdigest()
-        rel_path = str(file.relative_to(Directories.ROOT))  # Relative Path String
+        rel_path = str(file.relative_to(Directories.ROOT))
         live_hashes[rel_path] = current_hash
 
         master_hash_value = master_hashes.get(rel_path)
         if not master_hash_value:
-            print(
-                f"CRITICAL: {rel_path} is not tracked in master_hashes.json. Please run freeze_hashes.py."
+            t.log(
+                "ERROR",
+                f"{rel_path} is not tracked in master_hashes.json. Please run freeze_hashes.py.",
             )
             sys.exit(1)
         if current_hash != master_hash_value:
-            print(
-                f"{rel_path} has been modified since {frozen_hashes_date} and does not match up with the master hash file."
+            t.log(
+                "ERROR",
+                f"{rel_path} has been modified since {frozen_hashes_date} and does not match up with the master hash file.",
             )
-            print(
-                "Audit aborted due to integrity failure. Reset master hashes or revert changes."
+            t.log(
+                "ERROR",
+                "Audit aborted due to integrity failure. Reset master hashes or revert changes.",
             )
             sys.exit(1)
 
@@ -121,16 +149,17 @@ def current_files(source_code_files):
     missing_files = authorized_py_files - current_rel_paths
 
     if unauthorized_files:
-        print(
-            f"CRITICAL: Unauthorized script(s) detected in root: {unauthorized_files}"
-        )
+        t.log("ERROR", f"Unauthorized script(s) detected in root: {unauthorized_files}")
         sys.exit(1)
 
     if missing_files:
-        print(f"CRITICAL: Missing source code file(s): {missing_files}")
+        t.log("ERROR", f"Missing source code file(s): {missing_files}")
         sys.exit(1)
 
-    print(f"Inventory Validation Successful: {len(current_rel_paths)} files verified.")
+    t.log(
+        "SUCCESS",
+        f"Inventory Validation Successful: {len(current_rel_paths)} files verified.",
+    )
 
     return current_rel_paths
 
@@ -159,5 +188,5 @@ def generate_hashes():
         return orchestration_metadata(source_code_files, master_hashes_path)
 
     except ImportError as e:
-        print(f"CRITICAL ERROR: Failed to load necessary logic: {e}")
+        t.log("ERROR", f"Failed to load necessary logic: {e}")
         sys.exit(1)
