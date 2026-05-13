@@ -126,6 +126,7 @@ def code_generation_pipeline(
         TimeRemainingColumn(),
         console=t.console,
         expand=True,
+        transient=True,
     ) as progress_bar:
         label_style = UIConfig.STATUS_STYLES.get("INFO", "white")
         model_label = f"ID: {model_id[: UIConfig.MODEL_ID_TRUNCATE]:<{UIConfig.PROGRESS_LABEL_PAD}}"
@@ -143,9 +144,7 @@ def code_generation_pipeline(
                 output_file_path = model_output_dir / output_file
 
                 if output_file_path.exists():
-                    progress_bar.console.log(
-                        f"[dim]Skipping prompt {index}: File already exists.[/]"
-                    )
+                    t.log("SUBTITLE", f"Skipping prompt {index}: File already exists.")
                     progress_bar.update(task_id, advance=1)
                     continue
 

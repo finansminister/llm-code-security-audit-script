@@ -1,6 +1,7 @@
 import json
 import shutil
 import sys
+from contextlib import nullcontext
 from pathlib import Path
 from typing import Any, Optional
 
@@ -133,8 +134,8 @@ def orchestration(
 
 
 if __name__ == "__main__":
-    TEST_MODE = False
-    LIMIT = 3 if TEST_MODE else None
+    TEST_MODE = True
+    LIMIT = 5 if TEST_MODE else None
 
     if (legacy_session_id := resume_session(Directories.PARENT_OUTPUT_DIR)) is not None:
         Directories.rebase_session(legacy_session_id)
@@ -149,8 +150,15 @@ if __name__ == "__main__":
 
     width = UIConfig.WIDTH
     f_pad = UIConfig.FILE_PATH_TRUNCATE
-    with keep.running():
+    try:
+        wakelock = keep.running()
+    except Exception:
+        wakelock = nullcontext()
+        t.log("ERROR", "Wakepy ignored")
+
+    with wakelock:
         tee = Tee(session_terminal_output)
+
         original_stdout = sys.stdout
         original_stderr = sys.stderr
         sys.stdout = tee
@@ -169,7 +177,7 @@ if __name__ == "__main__":
             for filename, full_hash in master.items():
                 if filename != "date":
                     baseline_info.append(
-                        f"[{S.FILE}]{filename:<{f_pad}}[/] | [white]{full_hash[:12]}[/]"
+                        f"[{S.FILE}]{filename:<{f_pad}}[/] | [white]{full_hash[:24]}[/]"
                     )
 
             t.print(
@@ -187,6 +195,7 @@ if __name__ == "__main__":
         finally:
             sys.stdout = original_stdout
             sys.stderr = original_stderr
+            t.console.file = sys.stdout  # Reset Rich console
             tee.close()
             t.log(
                 "INFO",

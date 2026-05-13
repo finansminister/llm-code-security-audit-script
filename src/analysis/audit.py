@@ -1,4 +1,5 @@
 import inspect
+import io
 import json
 import re
 import sys
@@ -13,8 +14,9 @@ from config import OWASP2025, Directories, UIConfig
 from config import Telemetry as t
 
 
-class Tee:
+class Tee(io.TextIOBase):
     def __init__(self, filename):
+        super().__init__()  # Initialize the base class
         self.terminal = sys.stdout
         self.log = open(filename, "w", encoding="utf-8")
         self.ansi_escape = re.compile(r"\x1b\[[0-9;]*[mGJKHF]")
@@ -23,12 +25,13 @@ class Tee:
         self.terminal.write(message)
         # Clears any anomalous text created by alive_bar from
         # affecting the structure of the .txt log
-        if any(char in message for char in ("\r", "\x1b")):
-            return
+        if "\r" in message:
+            return len(message)
 
         clean_message = self.ansi_escape.sub("", message)
         if clean_message.strip() or clean_message == "\n":
             self.log.write(clean_message)
+        return len(message)
 
     def fileno(self):
         return self.terminal.fileno()
@@ -39,6 +42,7 @@ class Tee:
 
     def close(self):
         self.log.close()
+        super().close()
 
 
 def log_attempt(

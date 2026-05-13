@@ -6,6 +6,7 @@ from typing import Optional
 
 from dotenv import load_dotenv
 from rich.console import Console
+from rich.markup import escape
 
 load_dotenv()
 
@@ -46,7 +47,13 @@ for key, value in UIConfig.STATUS_STYLES.items():
 
 class Telemetry:
     # rich.progress console variable used for prints and status updates
-    console = Console(width=UIConfig.WIDTH, highlight=False)
+    console = Console(
+        width=UIConfig.WIDTH,  # Sets a fixed character width for consistent UI across different terminals
+        highlight=False,  # Disables automatic regex-based colorization of numbers/strings for cleaner logs
+        log_path=False,  # Removes the 'config.py:line' suffix from logs to reduce visual clutter
+        force_terminal=True,  # Ensures Rich renders colors and styles even when output is piped to a file (Tee)
+        soft_wrap=True,  # Prevents word-wrapping from breaking the structure of long logs or code blocks
+    )
 
     # internal function to calculate style colors with UIConfig.STATUS_STYLES list of colours for rich module
     @classmethod
@@ -69,7 +76,7 @@ class Telemetry:
             },
             "file_path": {
                 "active": file_path is not None,
-                "content": f"{message} [{UIConfig.STATUS_STYLES.get('FILE_NAME', 'white')}]{file_path.name if file_path else ''}[/]",
+                "content": f"{message} [{cls._style('FILE')}]{file_path.name if file_path else ''}[/]",
             },
         }
         final_message = message
@@ -79,8 +86,12 @@ class Telemetry:
                 final_message = options[key]["content"]
                 break
 
+        # the content of the message ignores brackets as to not adjust the color of the log
+        # without escape = Error [429]: Too many requests -> Error : Too many requests
+        # with escape = Error [429]: Too many requests -> Error [429]: Too many requests
+        validated_message = escape(final_message)
         cls.console.log(
-            f"[{cls._style(status)}]{status:<{UIConfig.STATUS_PAD}}[/] | {final_message}"
+            f"[{cls._style(status)}]{status:<{UIConfig.STATUS_PAD}} | {validated_message}[/]"
         )
 
     @classmethod
