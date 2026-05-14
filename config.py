@@ -2,7 +2,7 @@ import os
 import sys
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 from dotenv import load_dotenv
 from rich.console import Console
@@ -34,6 +34,7 @@ class UIConfig:
         "PASSED": "green",
         "SIGNIFICANT": "bold sky_blue3",
         "INSIGNIFICANT": "italic dim white",
+        "MISC_DATA": "italic white",
     }
 
 
@@ -67,7 +68,8 @@ class Telemetry:
         message: str,
         error: Optional[BaseException] = None,
         file_path: Optional[Path] = None,
-        target: str | Path | None = None,
+        target: Any = None,
+        target_type: Optional[str] = None,
     ):
 
         # the content of the message ignores brackets as to not adjust the color of the log
@@ -90,7 +92,7 @@ class Telemetry:
                         f"[{cls._style('FILE')}]{escape(str(target))}[/]"
                     )
                     if "{}" in validated_msg
-                    else f"{validated_msg} [{cls._style('FILE')}]{escape(str(target))}[/]"
+                    else f"{validated_msg} [{cls._style(target_type) if target_type else cls._style('FILE')}]{escape(str(target))}[/]"
                 ),
             },
         }

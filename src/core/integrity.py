@@ -114,20 +114,18 @@ def current_hash_values(source_code_files, master_hashes_path):
 
         master_hash_value = master_hashes.get(rel_path)
         if not master_hash_value:
-            t.log(
-                "ERROR",
-                f"{rel_path} is not tracked in master_hashes.json. Please run freeze_hashes.py.",
-            )
+            t.log("ERROR", "{} is not tracked in master_hashes.json.", target=rel_path)
+            t.log("ERROR", "Please run freeze_hashes.py.")
             sys.exit(1)
         if current_hash != master_hash_value:
+            t.log("ERROR", "Integrity mismatch for: {}", target=rel_path)
             t.log(
                 "ERROR",
-                f"{rel_path} has been modified since {frozen_hashes_date}\nand does not match up with the master hash file.",
+                "File modified since: {}",
+                target=frozen_hashes_date,
+                target_type="MISC_DATA",
             )
-            t.log(
-                "ERROR",
-                "Audit aborted due to integrity failure. Reset master hashes or revert changes.",
-            )
+            t.log("ERROR", "Audit aborted. Reset master hashes or revert changes.")
             sys.exit(1)
 
     return live_hashes, frozen_hashes_date
@@ -150,16 +148,22 @@ def current_files(source_code_files):
     missing_files = authorized_py_files - current_rel_paths
 
     if unauthorized_files:
-        t.log("ERROR", f"Unauthorized script(s) detected in root: {unauthorized_files}")
+        t.log(
+            "ERROR",
+            "Unauthorized script(s) detected in root: {}",
+            target=unauthorized_files,
+        )
         sys.exit(1)
 
     if missing_files:
-        t.log("ERROR", f"Missing source code file(s): {missing_files}")
+        t.log("ERROR", "Missing source code file(s): {}", target=missing_files)
         sys.exit(1)
 
     t.log(
         "SUCCESS",
-        f"Inventory Validation Successful: {len(current_rel_paths)} files verified.",
+        "Inventory Validation Successful: {} files verified.",
+        target=len(current_rel_paths),
+        target_type="MISC_DATA",
     )
 
     return current_rel_paths
