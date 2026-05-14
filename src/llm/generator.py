@@ -16,7 +16,8 @@ from rich.progress import (
 
 from config import Directories, UIConfig
 from config import Telemetry as t
-from src.analysis.audit import log_attempt, sanitize_code
+from src.analysis.audit import log_attempt
+from src.core.parser import sanitize_code
 
 
 def main_api_call(

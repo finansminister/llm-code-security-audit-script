@@ -95,7 +95,7 @@ def cwe_per_owasp(cwe_dict: dict, cwe_dict_file_name: str, summary_dir: Path) ->
     metadata_path = summary_dir / "cwe_per_owasp.txt"
     counts = Counter(cwe_dict.values())
 
-    t.log("INFO", "Metadata saved to: {}", target=metadata_path)
+    t.log("INFO", "Metadata saved to: {}", target=metadata_path.name)
 
     with open(metadata_path, "w", encoding="utf-8") as file:
         file.write("=== EXPERIMENT METADATA ===\n")

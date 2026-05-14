@@ -71,15 +71,19 @@ def validate_integrity(
 
     current_drifts = {reason: list(files) for reason, files in drifts.items() if files}
     if current_drifts:
-        error_content = f"[{S.ERROR}]Location:[/] {context}\n\n"
+        error_content = f"[{S.ERROR}]Location:[/] {context}\n"
+
         for reason, files in current_drifts.items():
-            error_content += f"[{S.ERROR}]-> {reason}:[/] {files}\n"
+            # Create a vertical bulleted list for each drift type
+            file_list = "\n   • ".join(files)
+            error_content += f"\n[{S.ERROR}]{reason}:[/]\n   • {file_list}\n"
+
         t.print(
             Panel(
                 error_content,
                 title=f"[{S.ERROR}]CRITICAL INTEGRITY BREACH",
                 border_style="red",
-                expand=False,
+                expand=True,
                 padding=(1, 2),
             )
         )

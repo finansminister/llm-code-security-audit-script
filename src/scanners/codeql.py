@@ -4,7 +4,7 @@ from typing import Any
 
 from config import Directories, Styles
 from config import Telemetry as t
-from src.analysis.audit import sarif_parser
+from src.core.parser import sarif_parser
 
 S: Any = Styles
 
