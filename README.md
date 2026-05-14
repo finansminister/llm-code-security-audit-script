@@ -131,15 +131,16 @@ Powered by the `Rich` library, the framework provides a professional CLI experie
 2. **Environment**: Create a `.env` file with your API keys (Anthropic, Gemini, Mistral, and OpenRouter).
 3. **Baseline**: Freeze your source code baseline to enable integrity checks:
 4.
-    ```bash
-    python freeze_hashes.py
+  ```bash
+  python freeze_hashes.py
     
 
 ### Usage
 
 To begin a full audit run (121 prompts per model):
 
-```bash
-python3 main.py
+  ```bash
+  python3 main.py
+
 
 To run a quick diagnostic test, set `TEST_MODE = True` in `main.py` to trigger a limited 5-prompt sample.
