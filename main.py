@@ -192,8 +192,7 @@ def terminal_output(TEST_MODE: bool, LIMIT=None):
 
 
 if __name__ == "__main__":
-    TEST_MODE = True
-    DEBUG_MODE = False
+    TEST_MODE = False
     LIMIT = 5 if TEST_MODE else None
 
     load_dotenv()

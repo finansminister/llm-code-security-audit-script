@@ -19,16 +19,6 @@ Name scheme and parameters:
 """
 
 
-def test_func():
-    if LLMConfig.META_KEY:
-        key = LLMConfig.META_KEY
-        t.print(f"DEBUG | Key: {key[:12]}... | Length: {len(key)}")
-        if key.strip() != key:
-            t.print("[bold red]CRITICAL: Your key has hidden whitespace/newlines![/]")
-        if key.endswith("\r"):
-            t.print("[bold red]CRITICAL: Windows line ending detected in key![/]")
-
-
 def gemini_api_call(client, model_id, temperature, max_tokens, prompt):
     try:
         response = client.models.generate_content(

@@ -29,7 +29,10 @@ class Tee(io.TextIOBase):
 
         clean_message = self.ansi_escape.sub("", message)
         if clean_message.strip() or clean_message == "\n":
-            self.log.write(clean_message)
+            try:
+                self.log.write(clean_message)
+            except ValueError:
+                pass  # prevents error messages when closing script during final "finally" block
         return len(message)
 
     def fileno(self):
@@ -37,10 +40,16 @@ class Tee(io.TextIOBase):
 
     def flush(self):
         self.terminal.flush()
-        self.log.flush()
+        if self.log and not self.log.closed:
+            try:
+                self.log.flush()
+            except ValueError:
+                pass  # prevents the splitter from trying to flush the contents after the terminal has been closed
 
     def close(self):
-        self.log.close()
+        self.flush()  # making sure it flushes before the terminal closes to prevent error messages
+        if self.log and not self.log.closed:
+            self.log.close()
         super().close()
 
 
