@@ -146,7 +146,7 @@ def meta_api_call(client, model_id, temperature, max_tokens, prompt):
     try:
         # OpenRouter usually requires these headers to help with their rankings
         extra_headers = {
-            "HTTP-Referer": "https://github.com/finansminister/bachelors-thesis-project",
+            "HTTP-Referer": "https://github.com/finansminister/llm-code-security-audit",
             "X-Title": "Security Audit Research for LLM code generation",
         }
 
