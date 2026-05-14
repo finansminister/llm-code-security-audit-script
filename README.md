@@ -57,7 +57,7 @@ Beyond raw CWE counts, the framework provides high-level semantic context by map
 
 1. **Clone & Install**:
 ```bash
-git clone https://github.com/finansminister/bachelors-thesis-project.git
+git clone https://github.com/finansminister/llm-code-security-audit.git
 pip install -r requirements.txt
 
 ```
