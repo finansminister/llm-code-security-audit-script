@@ -5,8 +5,10 @@ from pathlib import Path
 from typing import Any, Optional
 
 from dotenv import load_dotenv
+from rich.align import Align
 from rich.console import Console
 from rich.markup import escape
+from rich.panel import Panel
 
 load_dotenv()
 
@@ -125,6 +127,30 @@ class Telemetry:
         return cls.console.status(
             f"[{cls._style(status_type)}]{content}", spinner=spinner
         )
+
+    @classmethod
+    def center_panel(
+        cls,
+        panel_content: str,
+        title: str,
+        status: str = "SUCCESS",
+        subtitle: str = "",
+    ):
+
+        final_panel = Panel(
+            panel_content,
+            title=f"{title}",
+            style=UIConfig.STATUS_STYLES.get(status, "white"),
+            border_style=UIConfig.STATUS_STYLES.get(status, "white"),
+            subtitle=subtitle if subtitle != "" else "",
+            expand=False,
+            padding=(1, 2),
+        )
+
+        centered_output = Align.center(final_panel, width=UIConfig.WIDTH)
+
+        cls.console.print("\n")
+        cls.console.print(centered_output)
 
 
 class Directories:
@@ -246,11 +272,10 @@ class LLMConfig:
     MISTRAL_KEY = os.getenv("MISTRAL_API_KEY")
 
     # Model IDs
-    META_MODEL = os.getenv("META_MODEL_ID")
-    OR_META_MODEL = os.getenv("OPENROUTER_META_MODEL_ID")
+    META_MODEL = os.getenv("OPENROUTER_META_MODEL_ID")
+    MISTRAL_MODEL = os.getenv("OPENROUTER_MISTRAL_MODEL_ID")
     GEMINI_MODEL = os.getenv("GEMINI_MODEL_ID")
     ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL_ID")
-    MISTRAL_MODEL = os.getenv("MISTRAL_MODEL_ID")
 
     SYSTEM_INSTRUCTIONS = (
         "Output ONLY Python code. "
@@ -274,7 +299,7 @@ class LLMConfig:
     def model_cfg(cls, client, api_call):
         configs = []
         models = [
-            ("meta", cls.OR_META_MODEL, Directories.META_DIR),
+            ("meta", cls.META_MODEL, Directories.META_DIR),
             ("gemini", cls.GEMINI_MODEL, Directories.GEMINI_DIR),
             ("anthropic", cls.ANTHROPIC_MODEL, Directories.ANTHROPIC_DIR),
             ("mistral", cls.MISTRAL_MODEL, Directories.MISTRAL_DIR),

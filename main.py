@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from dotenv import load_dotenv
+from rich.align import Align
 from rich.panel import Panel
 from wakepy import keep
 
@@ -124,15 +125,15 @@ def orchestration(
         if results:
             stats.extend(results)
 
-        t.print(
-            Panel(
-                f"Vulnerability Report Generated: [{S.FILE}]{report_path.name}[/]\n"
-                f"Integrity Check: [{S.PASSED}]PASSED[/]",
-                title=f"[{S.SUCCESS}]Completion: {model['name']}",
-                subtitle=f"[{S.SUBTITLE}]{model['id']}[/]",
-                border_style="green",
-                expand=False,
-            )
+        panel_content = (
+            f"Vulnerability Report Generated: [{S.FILE}]{report_path.name}[/]\n"
+            f"Integrity Check: [{S.PASSED}]PASSED[/]"
+        )
+        t.center_panel(
+            panel_content,
+            f"Completion: {model['name']}",
+            status="SUCCESS",
+            subtitle=f"[{S.SUBTITLE}]{model['id']}[/]",
         )
 
     t.rule("SUCCESS", "ALL MODELS PROCESSED")
@@ -167,14 +168,15 @@ def terminal_output(TEST_MODE: bool, LIMIT=None):
                 baseline_info.append(
                     f"[{S.FILE}]{filename:<{f_pad}}[/] | [white]{full_hash[:24]}[/]"
                 )
-        t.print(
-            Panel(
-                "\n".join(baseline_info),
-                title=f"[{S.INFO}]Master Integrity Baseline",
-                border_style=f"{S.INFO}",
-                padding=(1, 2),
-            )
+        baseline_panel = Panel(
+            "\n".join(baseline_info),
+            title=f"[{S.INFO}]Master Integrity Baseline",
+            border_style=f"{S.INFO}",
+            padding=(1, 2),
         )
+
+        centered_content = Align.center(baseline_panel, width=UIConfig.WIDTH)
+        t.print(centered_content)
     try:
         orchestration(
             session_jsonl_log_path, final_audit_results_path, test_limit=LIMIT

@@ -4,9 +4,10 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from rich.align import Align
 from rich.panel import Panel
 
-from config import Directories, Styles
+from config import Directories, Styles, UIConfig
 from config import Telemetry as t
 
 S: Any = Styles
@@ -20,17 +21,13 @@ def end_of_process_integrity(final_metadata, start_metadata):
         source_code=True,
     )
 
-    t.print(
-        Panel(
-            f"[{S.SUCCESS}]Initial and Final System States match.[/]\n"
-            f"Verified Files: {len(final_metadata['live_hashes'])}\n"
-            f"Baseline Date: {final_metadata['master_hashes_date']}",
-            title=f"[{S.SUCCESS}]INTEGRITY CHECK PASSED",
-            border_style="green",
-            expand=False,
-            padding=(1, 2),
-        )
+    content = (
+        "Initial and Final System States match.\n"
+        f"Verified Files: [{S.MISC_DATA}]{len(final_metadata['live_hashes'])}[/]\n"
+        f"Baseline Date: [{S.MISC_DATA}]{final_metadata['master_hashes_date']}[/]"
     )
+
+    t.center_panel(content, "INTEGRITY CHECK PASSED", status="SUCCESS")
 
 
 def llm_output_integrity(manifest_path: Path, output_dir: Path) -> None:
