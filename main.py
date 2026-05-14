@@ -16,6 +16,7 @@ from src.core import (
     end_of_process_integrity,
     generate_hashes,
     llm_output_integrity,
+    sarif_parser,
 )
 from src.llm import (
     anthropic_api_call,
@@ -98,6 +99,9 @@ def orchestration(
                 "Skipping CodeQL: Report already exists for {}",
                 target=model["name"],
             )
+            results = sarif_parser(sarif_path, cwe_dict, model["name"])
+            if results:
+                stats.extend(results)
             continue
 
         output_manifest = code_generation_pipeline(
@@ -141,7 +145,7 @@ def orchestration(
         run_statistics(stats, final_audit_results_path)
 
 
-def terminal_output():
+def terminal_output(TEST_MODE: bool, LIMIT=None):
     tee = Tee(session_terminal_output)
 
     original_stdout = sys.stdout
@@ -176,15 +180,15 @@ def terminal_output():
             session_jsonl_log_path, final_audit_results_path, test_limit=LIMIT
         )
     finally:
-        sys.stdout = original_stdout
-        sys.stderr = original_stderr
-        t.console.file = sys.stdout  # Reset Rich console
-        tee.close()
         t.log(
             "INFO",
             "Session Complete. Log saved to",
             file_path=session_terminal_output,
         )
+        sys.stdout = original_stdout
+        sys.stderr = original_stderr
+        t.console.file = sys.stdout  # Reset Rich console
+        tee.close()
 
 
 if __name__ == "__main__":
@@ -216,5 +220,5 @@ if __name__ == "__main__":
         t.log("ERROR", "Wakepy ignored", error=e)
 
     with wakelock:
-        terminal_output()
+        terminal_output(TEST_MODE, LIMIT)
         sys.exit(0)

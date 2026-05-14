@@ -98,6 +98,41 @@ def log_attempt(
         t.log(status, msg)
 
 
+def save_atomically(df: pd.DataFrame, file_path: Path):
+    temp_path = file_path.with_suffix(".tmp")
+    try:
+        df.to_csv(temp_path)
+        temp_path.replace(file_path)
+    except Exception as e:
+        if temp_path.exists():
+            temp_path.unlink()
+        raise e
+
+
+# helper function to fix .agg issues when using lambda functions to calculate values within the "table"
+def calculate_group_stats(group):
+    total_alerts = len(group)
+    mean_severity = group["security_severity"].mean()
+
+    # Count unique file_paths only where security_issue is True
+    vulnerable_files = group[group["security_issue"]]["file_path"].nunique()
+    total_unique_files = group["file_path"].nunique()
+
+    vulnerability_rate = (
+        (vulnerable_files / total_unique_files * 100) if total_unique_files > 0 else 0
+    )
+
+    return pd.Series(
+        {
+            "total_alerts": total_alerts,
+            "mean_severity": mean_severity,
+            "vulnerable_files": vulnerable_files,
+            "total_unique_files": total_unique_files,
+            "vulnerability_rate": vulnerability_rate,
+        }
+    )
+
+
 def audit_stats(
     csv_audit_file: Path, stat_summary_report_path: Path
 ) -> Optional[pd.DataFrame]:
@@ -107,24 +142,16 @@ def audit_stats(
         t.log("ERROR", f"Audit file: {csv_audit_file} not found...", error=e)
         return None
 
-    stat_summary = (
-        df.groupby("model")
-        .agg(
-            total_alerts=("security_issue", "count"),
-            mean_severity=("security_severity", "mean"),
-            vulnerable_files=(
-                "file_path",
-                lambda x: df.loc[x.index][df["security_issue"]]["file_path"].nunique(),
-            ),
-            total_unique_files=("file_path", "nunique"),
-        )
-        .assign(
-            vulnerability_rate=lambda x: (
-                x["vulnerable_files"] / x["total_unique_files"] * 100
-            )
-        )
-    )
-    stat_summary.to_csv(stat_summary_report_path)
+    metrics = calculate_group_stats
+
+    stat_summary = df.groupby("model").apply(metrics)
+
+    try:
+        save_atomically(stat_summary, stat_summary_report_path)
+        t.log("SUCCESS", f"Stat Summary saved safely: {stat_summary_report_path.name}")
+    except Exception as e:
+        t.log("ERROR", "Atomic save failed", error=e)
+
     t.log("SUCCESS", f"Stat Summary saved to: {stat_summary_report_path.name}")
 
     # rich.progress table to showcase stats, acts like an excel-like table structure

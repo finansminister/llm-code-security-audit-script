@@ -33,6 +33,7 @@ def sarif_parser(sarif_report: Path, cwe_dict: dict, model_name: str) -> Optiona
         return [
             {
                 "model": model_name,
+                "file_path": "",
                 "rule_id": "none",
                 "security_severity": 0.0,
                 "security_issue": False,
@@ -50,6 +51,9 @@ def sarif_parser(sarif_report: Path, cwe_dict: dict, model_name: str) -> Optiona
         properties = rule_obj.get("properties", {})
         default_config = rule_obj.get("defaultConfiguration", {})
         tags = properties.get("tags", [])
+        file_path = result["locations"][0]["physicalLocation"]["artifactLocation"][
+            "uri"
+        ]
 
         owasp_codes = set()
         cwe_list = []
@@ -66,6 +70,7 @@ def sarif_parser(sarif_report: Path, cwe_dict: dict, model_name: str) -> Optiona
         findings.append(
             {
                 "model": model_name,
+                "file_path": file_path,
                 "rule_id": rule_id,
                 "security_severity": float(properties.get("security-severity", 0.0)),
                 "security_issue": len(owasp_codes) > 0,

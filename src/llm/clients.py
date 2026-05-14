@@ -3,10 +3,8 @@ from typing import Any
 import anthropic
 from google import genai
 from google.genai import types
-
-# import openai
-from groq import Groq
 from mistralai.client import Mistral
+from openai import OpenAI
 
 from config import LLMConfig, Styles
 from config import Telemetry as t
@@ -156,7 +154,14 @@ def mistral_api_call(client, model_id, temperature, max_tokens, prompt):
 
 def meta_api_call(client, model_id, temperature, max_tokens, prompt):
     try:
+        # OpenRouter usually requires these headers to help with their rankings
+        extra_headers = {
+            "HTTP-Referer": "https://github.com/finansminister/bachelors-thesis-project",
+            "X-Title": "Security Audit Research for LLM code generation",
+        }
+
         response = client.chat.completions.create(
+            extra_headers=extra_headers,
             model=model_id,
             messages=[
                 {
@@ -166,17 +171,18 @@ def meta_api_call(client, model_id, temperature, max_tokens, prompt):
                 {"role": "user", "content": prompt},
             ],
             temperature=temperature,
-            max_completion_tokens=max_tokens,
+            max_tokens=max_tokens,
         )
 
-        # Extracting data
         content = response.choices[0].message.content
         finish_reason = response.choices[0].finish_reason
+
         used_tokens = {
             "prompt": response.usage.prompt_tokens,
             "completion": response.usage.completion_tokens,
             "total": response.usage.total_tokens,
         }
+
         if finish_reason in ["content_filter", "null"]:
             return (
                 f"Refusal: {model_id} refused via {finish_reason}.",
@@ -185,8 +191,9 @@ def meta_api_call(client, model_id, temperature, max_tokens, prompt):
             )
 
         return content, used_tokens, finish_reason
+
     except Exception as e:
-        log_msg = f"API Request Failed: {model_id}"
+        log_msg = f"API Request Failed (OpenRouter): {model_id}"
         t.log("ERROR", log_msg, error=e)
         return (
             f"ERROR: {str(e)}",
@@ -197,7 +204,9 @@ def meta_api_call(client, model_id, temperature, max_tokens, prompt):
 
 def get_clients():
     return {
-        "meta": Groq(api_key=LLMConfig.META_KEY),  # Native Groq client
+        "meta": OpenAI(
+            base_url="https://openrouter.ai/api/v1", api_key=LLMConfig.META_KEY
+        ),  # Openrouter
         "gemini": genai.Client(api_key=LLMConfig.GEMINI_KEY),
         "anthropic": anthropic.Anthropic(api_key=LLMConfig.ANTHROPIC_KEY),
         "mistral": Mistral(api_key=LLMConfig.MISTRAL_KEY),
