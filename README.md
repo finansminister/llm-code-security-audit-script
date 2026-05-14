@@ -8,77 +8,143 @@ The framework is built with a **"Security-First"** philosophy, utilizing bit-lev
 
 ---
 
-## Technical Architecture
+## Technical Architecture & File Structure
 
-### Core Pipeline Modules
+The repository is organized into specialized layers: **Configuration**, **Execution**, **Defense**, and **Analysis**. Each file has a strict responsibility to ensure the system remains "state-aware" and mathematically valid.
 
-* **`main.py`**: The central orchestrator. Features an **idempotent session resumption system** and manages the UI lifecycle via a centralized Telemetry system.
-* **`src/llm/`**: The model interface layer. Utilizes a hybrid architecture of **native SDKs** (Anthropic, Gemini, Mistral) and **OpenRouter (OpenAI-compatible)** integration for high-availability access to Meta’s Llama suite.
-* **`src/scanners/codeql.py`**: The analytical engine. Automates CodeQL database initialization and static analysis using the `python-security-and-quality` suite.
-* **`src/core/integrity.py`**: The cryptographic gateway. Implements SHA-256 bitstream validation for both the framework's source code (Master Baseline) and the LLM-generated artifacts.
-* **`src/analysis/stats.py`**: The scientific engine. Implements **Pandas-driven data aggregation** and automated statistical testing (**ANOVA**, **Chi-Squared**, and **Kruskal-Wallis**) to determine significance between model performances.
+### Root Orchestration & Configuration
+* **`main.py`**: The "Central Brain." Manages the execution lifecycle, idempotent session resumption logic, and coordinates the handoff between LLM generation and security scanning.
+* **`config.py`**: The "Source of Truth." A centralized manifest for API hyperparameters, directory maps, and the `Telemetry` system which drives the Rich-based CLI.
+* **`freeze_hashes.py`**: The "Setup Tool." Used to generate the `master_hashes.json` baseline, capturing the pristine state of the framework's source code before an audit.
 
-### Configuration & Telemetry
+### LLM Interface Layer (`src/llm/`)
+* **`clients.py`**: The "Connection Hub." Initializes specialized API clients for Anthropic, Gemini, and Mistral, alongside an OpenRouter/OpenAI bridge for Meta’s Llama suite.
+* **`generator.py`**: The "Pipeline Logic." Orchestrates the batch generation process, iterating through prompts and persisting LLM responses into session directories.
 
-* **`config.py`**: Centralized manifest for hyperparameters and the **Telemetry** class, which drives a Rich-based CLI with real-time logging and status spinners.
-* **`Directories` Logic**: Utilizes boolean XNOR logic to maintain strict separation between the "Golden Master" root environment and session-specific transient trees.
-* **`/session-logs`**: Persistent, timestamped audit trails containing terminal outputs via a custom **Tee I/O** implementation and raw JSONL logs.
+### Security & Integrity Layer (`src/core/`)
+* **`integrity.py`**: The "Validator." Implements SHA-256 bitstream checks to detect source code drift and ensure the cryptographic chain of custody for LLM artifacts.
+* **`parser.py`**: The "Data Cleaner." Extracts sanitized Python source code from raw LLM Markdown responses, ensuring syntactical correctness for the scanner.
+
+### Analytical Scanning Layer (`src/scanners/`)
+* **`codeql.py`**: The "Automator." A wrapper for the CodeQL CLI. Handles database initialization, query execution (using the `python-security-and-quality` suite), and SARIF report generation.
+* **`owasp.py`**: The "Mapping Engine." Correlates raw CWE identifiers from CodeQL results with the high-level **OWASP Top 10 (2025)** categories to provide semantic context.
+
+### Scientific Analysis & Logging Layer (`src/analysis/`)
+* **`audit.py`**: The "Logger." Implements a custom **Tee I/O** system for mirrored terminal/file logging and maintains a persistent JSONL audit trail of every API attempt.
+* **`stats.py`**: The "Scientist." Performs automated data aggregation and statistical significance testing, including **ANOVA**, **Chi-Squared**, and **Kruskal-Wallis** tests.
 
 ---
 
 ## Technical Features
 
 ### 1. Robust Session Resumption
-
-The framework is designed for long-running batch audits. In the event of network failure or system interruption, the orchestration logic detects existing SARIF reports and "hydrates" the statistical engine from disk, ensuring no data loss and zero redundant API spend.
+The framework is designed for large-scale batch audits. In the event of interruption, the logic detects existing SARIF reports and "hydrates" the statistical engine from disk, preventing redundant API costs and ensuring data continuity.
 
 ### 2. High-Availability LLM Access
-
-By integrating **OpenRouter** as a secondary gateway, the framework bypasses common provider-specific authentication hurdles (e.g., Groq 401 errors), automatically routing requests to the most stable available inference node.
+By utilizing **OpenRouter** as a secondary gateway for the Meta/Llama suite, the framework provides a resilient failover mechanism that bypasses provider-specific rate limits and authentication hurdles (e.g., Groq 401 errors).
 
 ### 3. Atomic Data Integrity
+All statistical summaries are handled via **Atomic Write Operations**. The system writes data to temporary buffers before swapping to final CSV outputs, eliminating the risk of file corruption during system crashes or I/O interruptions.
 
-All statistical summaries are handled via **Atomic Write Operations**. The system writes to temporary buffers before swapping to final CSV outputs, preventing file corruption if a crash occurs during a disk I/O operation.
-
-### 4. Standardized Security Mapping (OWASP 2025)
-
-Beyond raw CWE counts, the framework provides high-level semantic context by mapping vulnerabilities to the **OWASP 2025** categories, enabling a comparative study of model safety across different risk domains.
+### 4. Advanced Telemetry
+Powered by the `Rich` library, the framework provides a professional CLI experience with live status spinners, color-coded security panels, and real-time vulnerability notifications.
 
 ---
 
 ## Getting Started
 
 ### Prerequisites
-
 * **CodeQL CLI**: Must be installed and available in the system `PATH`.
 * **Python 3.10+**: Utilizes modern type-hinting, walrus operators, and context managers.
 
 ### Installation
-
 1. **Clone & Install**:
-```bash
-git clone https://github.com/finansminister/llm-code-security-audit.git
-pip install -r requirements.txt
+   ```bash
+   git clone [https://github.com/finansminister/bachelors-thesis-project.git](https://github.com/finansminister/llm-code-security-audit.git)
+   cd bachelors-thesis-project
+   pip install -r requirements.txt
+
+## Overview
+
+This repository provides a high-fidelity orchestration framework designed to audit the security posture of Python code generated by Large Language Models (LLMs). By leveraging **CodeQL** for static analysis and mapping results to the **OWASP Top 10 (2025)**, this tool quantifies the propensity of different models to introduce Common Weakness Enumerations (CWEs) into their outputs.
+
+The framework is built with a **"Security-First"** philosophy, utilizing bit-level integrity validation, XNOR-based state management, and professional telemetry to ensure the reproducibility and validity of scientific experimental results.
+
+---
+
+## Technical Architecture & File Structure
+
+The repository is organized into specialized layers: **Configuration**, **Execution**, **Defense**, and **Analysis**. Each file has a strict responsibility to ensure the system remains "state-aware" and mathematically valid.
+
+### Root Orchestration & Configuration
+* **`main.py`**: The "Central Brain." Manages the execution lifecycle, idempotent session resumption logic, and coordinates the handoff between LLM generation and security scanning.
+* **`config.py`**: The "Source of Truth." A centralized manifest for API hyperparameters, directory maps, and the `Telemetry` system which drives the Rich-based CLI.
+* **`freeze_hashes.py`**: The "Setup Tool." Used to generate the `master_hashes.json` baseline, capturing the pristine state of the framework's source code before an audit.
+
+### LLM Interface Layer (`src/llm/`)
+* **`clients.py`**: The "Connection Hub." Initializes specialized API clients for Anthropic, Gemini, and Mistral, alongside an OpenRouter/OpenAI bridge for Meta’s Llama suite.
+* **`generator.py`**: The "Pipeline Logic." Orchestrates the batch generation process, iterating through prompts and persisting LLM responses into session directories.
+
+### Security & Integrity Layer (`src/core/`)
+* **`integrity.py`**: The "Validator." Implements SHA-256 bitstream checks to detect source code drift and ensure the cryptographic chain of custody for LLM artifacts.
+* **`parser.py`**: The "Data Cleaner." Extracts sanitized Python source code from raw LLM Markdown responses, ensuring syntactical correctness for the scanner.
+
+### Analytical Scanning Layer (`src/scanners/`)
+* **`codeql.py`**: The "Automator." A wrapper for the CodeQL CLI. Handles database initialization, query execution (using the `python-security-and-quality` suite), and SARIF report generation.
+* **`owasp.py`**: The "Mapping Engine." Correlates raw CWE identifiers from CodeQL results with the high-level **OWASP Top 10 (2025)** categories to provide semantic context.
+
+### Scientific Analysis & Logging Layer (`src/analysis/`)
+* **`audit.py`**: The "Logger." Implements a custom **Tee I/O** system for mirrored terminal/file logging and maintains a persistent JSONL audit trail of every API attempt.
+* **`stats.py`**: The "Scientist." Performs automated data aggregation and statistical significance testing, including **ANOVA**, **Chi-Squared**, and **Kruskal-Wallis** tests.
+
+---
+
+## Technical Features
+
+### 1. Robust Session Resumption
+The framework is designed for large-scale batch audits. In the event of interruption, the logic detects existing SARIF reports and "hydrates" the statistical engine from disk, preventing redundant API costs and ensuring data continuity.
+
+### 2. High-Availability LLM Access
+By utilizing **OpenRouter** as a secondary gateway for the Meta/Llama suite, the framework provides a resilient failover mechanism that bypasses provider-specific rate limits and authentication hurdles (e.g., Groq 401 errors).
+
+### 3. Atomic Data Integrity
+All statistical summaries are handled via **Atomic Write Operations**. The system writes data to temporary buffers before swapping to final CSV outputs, eliminating the risk of file corruption during system crashes or I/O interruptions.
+
+### 4. Advanced Telemetry
+Powered by the `Rich` library, the framework provides a professional CLI experience with live status spinners, color-coded security panels, and real-time vulnerability notifications.
+
+---
+
+## Getting Started
+
+### Prerequisites
+* **CodeQL CLI**: Must be installed and available in the system `PATH`.
+* **Python 3.10+**: Utilizes modern type-hinting, walrus operators, and context managers.
+
+### Installation
+1. **Clone & Install**:
+   ```bash
+   git clone [https://github.com/finansminister/bachelors-thesis-project.git](https://github.com/finansminister/bachelors-thesis-project.git)
+   cd bachelors-thesis-project
+   pip install -r requirements.txt
 
 ```
-
 
 2. **Environment**: Create a `.env` file with your API keys (Anthropic, Gemini, Mistral, and OpenRouter).
-3. **Baseline**: Freeze your source code baseline:
+3. **Baseline**: Freeze your source code baseline to enable integrity checks:
+4. 
 ```bash
-python src/tools/freeze_hashes.py
+python freeze_hashes.py
 
 ```
-
-
 
 ### Usage
 
-To begin an audit run (Default: 121 prompts per model):
+To begin a full audit run (121 prompts per model):
 
 ```bash
 python3 main.py
 
 ```
 
-To test the pipeline with a smaller sample size, set `TEST_MODE = True` in `main.py` to trigger a limited run (e.g., 5 prompts).
+To run a quick diagnostic test, set `TEST_MODE = True` in `main.py` to trigger a limited 5-prompt sample.
