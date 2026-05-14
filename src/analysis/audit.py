@@ -66,17 +66,23 @@ def log_attempt(
 
     metadata = {
         "used_tokens": "used_tokens",
-        "error_msg": "error",
         "finish_reason": "finish_reason",
     }
 
     f_trunc = UIConfig.FILE_PATH_TRUNCATE
     status_text = {
         "SUCCESS": f"Prompt {output_file:<{f_trunc}} | Generated in {duration:>5.2f}s.",
-        "FAILED": f"CRITICAL FAILURE on {cwe_id:<{f_trunc}} | Error: {str(kwargs.get('error_msg', 'Unknown'))[: UIConfig.ERR_MSG_TRUNCATE]}",
-        "EMPTY": f"EMPTY RESPONSE on {cwe_id:<{f_trunc}} | API returned SUCCESS but text was EMPTY.",
-        "REFUSAL": f"SAFETY REFUSAL for {cwe_id:<{f_trunc}} | Model: {model}",
+        "FAILED": f"{cwe_id}",  # Keep this simple!
+        "EMPTY": f"{cwe_id} | API returned SUCCESS but text was EMPTY.",
+        "REFUSAL": f"{cwe_id} | Model: {model}",
     }
+
+    # clean error base exception for the sake of json logging
+    # but keep raw value for t.log function to properly handle
+
+    base_exception = kwargs.get("error_msg", "")
+    if base_exception:
+        log_entry["error"] = str(base_exception)
 
     for kwarg, data in metadata.items():
         if kwarg in kwargs:
@@ -87,6 +93,8 @@ def log_attempt(
         file.write(json.dumps(log_entry) + "\n")
 
     if msg := status_text.get(status):
+        if base_exception:
+            t.log(status, msg, error=base_exception)
         t.log(status, msg)
 
 

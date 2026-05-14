@@ -14,7 +14,7 @@ load_dotenv()
 class UIConfig:
     WIDTH = 140
     STATUS_PAD = 15
-    ERR_MSG_TRUNCATE = 50
+    ERR_MSG_TRUNCATE = 60
     FILE_PATH_TRUNCATE = 65
     PROGRESS_BAR_WIDTH = 40
     MODEL_ID_TRUNCATE = 25
@@ -30,6 +30,7 @@ class UIConfig:
         "RETRY": "bold orange3",
         "INFO": "bold cyan",
         "FILE": "cyan",
+        "ALREADY_EXISTS": "dim bold green",
         "SUBTITLE": "dim white",
         "PASSED": "green",
         "SIGNIFICANT": "bold sky_blue3",
@@ -76,10 +77,13 @@ class Telemetry:
         # without escape = Error [429]: Too many requests -> Error : Too many requests
         # with escape = Error [429]: Too many requests -> Error [429]: Too many requests
         validated_msg = escape(message)
+        target_style = cls._style(target_type) if target_type else cls._style("FILE")
         options = {
             "error": {
                 "active": error is not None,
-                "content": f"{validated_msg} | Error: {str(error).replace(chr(10), ' ').strip()[: UIConfig.ERR_MSG_TRUNCATE]}",
+                # We replace {} with () to prevent the string from being
+                # treated as a format specifier by the final f-string
+                "content": f"{validated_msg} | Error: {str(error).replace('{', '(').replace('}', ')').replace(chr(10), ' ').strip()[: UIConfig.ERR_MSG_TRUNCATE]}",
             },
             "file_path": {
                 "active": file_path is not None,
@@ -88,11 +92,11 @@ class Telemetry:
             "target": {
                 "active": target is not None,
                 "content": (
-                    validated_msg.format(
-                        f"[{cls._style('FILE')}]{escape(str(target))}[/]"
+                    validated_msg.replace(
+                        "{}", f"[{cls._style('FILE')}]{escape(str(target))}[/]"
                     )
                     if "{}" in validated_msg
-                    else f"{validated_msg} [{cls._style(target_type) if target_type else cls._style('FILE')}]{escape(str(target))}[/]"
+                    else f"{validated_msg} [{target_style}]{escape(str(target))}[/]"
                 ),
             },
         }
@@ -166,21 +170,35 @@ class Directories:
         cls.META_DIR = cls.OUTPUT_DIR / "meta-generated-outputs"
 
     @classmethod
-    def directories_check(cls):
-        Telemetry.rule("INFO", "Environment Directory Check")
-
-        directories = [
-            getattr(cls, dir_name)
-            for dir_name in dir(cls)
-            if isinstance(getattr(cls, dir_name), Path) and dir_name.endswith("_DIR")
+    def _directory_verification(cls, rule_text: str, root_only: bool = False):
+        Telemetry.rule("INFO", rule_text)
+        all_directories = [
+            getattr(cls, d)
+            for d in dir(cls)
+            if isinstance(getattr(cls, d), Path) and d.endswith("_DIR")
         ]
-        for directory in directories:
+
+        directories_to_verify = [
+            d for d in all_directories if (d.parent == cls.ROOT) == root_only
+        ]
+
+        for directory in directories_to_verify:
             rel_path = directory.relative_to(cls.ROOT)
             if not directory.exists():
                 directory.mkdir(parents=True, exist_ok=True)
                 Telemetry.log("SUCCESS", "Created directory:  ./", file_path=rel_path)
             else:
-                Telemetry.log("SUBTITLE", "Verified directory: ./", file_path=rel_path)
+                Telemetry.log(
+                    "ALREADY_EXISTS", "Verified directory: ./", file_path=rel_path
+                )
+
+    @classmethod
+    def directories_check_root(cls):
+        cls._directory_verification("Environment Root Directory Check", root_only=True)
+
+    @classmethod
+    def initialize_session_tree(cls):
+        cls._directory_verification("Initializing Session Tree")
 
 
 class SourceCode:
@@ -197,6 +215,7 @@ class SourceCode:
     FREEZE_HASHES_PATH = ROOT / "freeze_hashes.py"
 
     INTEGRITY_MGR_PATH = CORE_DIR / "integrity.py"
+    PARSER_MGR_PATH = CORE_DIR / "parser.py"
 
     GENERATION_MGR_PATH = LLM_DIR / "generator.py"
     LLM_API_MGR_PATH = LLM_DIR / "clients.py"

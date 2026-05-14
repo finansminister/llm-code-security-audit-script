@@ -14,10 +14,12 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 
-from config import Directories, UIConfig
+from config import Directories, Styles, UIConfig
 from config import Telemetry as t
 from src.analysis.audit import log_attempt
 from src.core.parser import sanitize_code
+
+S: Any = Styles
 
 
 def main_api_call(
@@ -49,9 +51,14 @@ def main_api_call(
                 }
             )
             if not response or str(response).strip() == "":
-                log_attempt(**log_data, status="EMPTY_RESPONSE")
+                log_attempt(**log_data, status="EMPTY")
                 return
 
+            if finish_reason == "error":
+                t.log(
+                    "ERROR", "Aborting run for {} due to API failure.", target=model_id
+                )
+                continue
             clean_code = str(sanitize_code(response))
 
             with open(output_path, "w", encoding="utf-8") as file:
@@ -75,7 +82,7 @@ def main_api_call(
                 )
                 time.sleep(delay)
             else:
-                log_attempt(**log_data, status="FAILED", error_msg=str(e))
+                log_attempt(**log_data, status="FAILED", error_msg=e)
                 break
     return None
 
@@ -118,9 +125,7 @@ def code_generation_pipeline(
     # stylistic progress bar used to display the progress of code generation
     t.rule("INFO", f"Processing Model: {model_name}")
     with Progress(
-        TextColumn(
-            f"[{UIConfig.STATUS_STYLES.get('INFO', 'white')}]" + "{task.description}"
-        ),
+        TextColumn(f"[{S.INFO}]" + "{task.description}"),
         BarColumn(bar_width=UIConfig.PROGRESS_BAR_WIDTH),
         TaskProgressColumn(),
         TextColumn("•"),
@@ -129,10 +134,9 @@ def code_generation_pipeline(
         expand=True,
         transient=True,
     ) as progress_bar:
-        label_style = UIConfig.STATUS_STYLES.get("INFO", "white")
         model_label = f"ID: {model_id[: UIConfig.MODEL_ID_TRUNCATE]:<{UIConfig.PROGRESS_LABEL_PAD}}"
         task_id = progress_bar.add_task(
-            f"[{label_style}]{model_label}[/]",
+            f"[{S.INFO}]{model_label}[/]",
             total=len(prompts),
         )
 
@@ -145,7 +149,10 @@ def code_generation_pipeline(
                 output_file_path = model_output_dir / output_file
 
                 if output_file_path.exists():
-                    t.log("SUBTITLE", f"Skipping prompt {index}: File already exists.")
+                    t.log(
+                        "ALREADY_EXISTS",
+                        f"Skipping prompt {index}: File already exists.",
+                    )
                     progress_bar.update(task_id, advance=1)
                     continue
 

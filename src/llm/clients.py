@@ -1,25 +1,17 @@
-import re
+from typing import Any
 
 import anthropic
-import openai
 from google import genai
 from google.genai import types
+
+# import openai
+from groq import Groq
 from mistralai.client import Mistral
 
-from config import LLMConfig, UIConfig
+from config import LLMConfig, Styles
 from config import Telemetry as t
 
-
-def format_error(model_id: str, error: Exception) -> str:
-    error_str = str(error)
-    # Extracts HTTP Error codes from API responses
-    # (4\d{2}|5\d{2}) looks for three digit error codes starting with 4 or 5
-    # # i.e 429, 503 etc.
-    http_match = re.search(r"\b(4\d{2}|5\d{2})\b", error_str)
-    http_code = http_match.group(0) if http_match else "ERROR"
-    clean_error = error_str.split("{")[0].strip()
-    return f"![{http_code}][/] {model_id:< {UIConfig.MODEL_ID_TRUNCATE}} | {clean_error[: UIConfig.ERR_MSG_TRUNCATE]}"
-
+S: Any = Styles
 
 """
 Name scheme and parameters:
@@ -27,6 +19,16 @@ Name scheme and parameters:
 [model]_api_call(client, model_id, temperature, max_tokens, prompt)
 
 """
+
+
+def test_func():
+    if LLMConfig.META_KEY:
+        key = LLMConfig.META_KEY
+        t.print(f"DEBUG | Key: {key[:12]}... | Length: {len(key)}")
+        if key.strip() != key:
+            t.print("[bold red]CRITICAL: Your key has hidden whitespace/newlines![/]")
+        if key.endswith("\r"):
+            t.print("[bold red]CRITICAL: Windows line ending detected in key![/]")
 
 
 def gemini_api_call(client, model_id, temperature, max_tokens, prompt):
@@ -61,9 +63,14 @@ def gemini_api_call(client, model_id, temperature, max_tokens, prompt):
 
         return content, used_tokens, finish_reason
     except Exception as e:
-        error_msg = format_error(model_id, e)
-        t.log("ERROR", error_msg)
-        return f"ERROR: {str(e)}", {"prompt": 0, "completion": 0, "total": 0}, "error"
+        log_msg = f"API Request Failed: {model_id}"
+        if "401" not in str(e):
+            t.log("ERROR", log_msg)
+        return (
+            f"ERROR: {str(e)}",
+            {"prompt": 0, "completion": 0, "total": 0},
+            "error",
+        )
 
 
 def anthropic_api_call(
@@ -100,9 +107,13 @@ def anthropic_api_call(
             )
         return content, used_tokens, finish_reason
     except Exception as e:
-        error_msg = format_error(model_id, e)
-        t.log("ERROR", error_msg)
-        return f"ERROR: {str(e)}", {"prompt": 0, "completion": 0, "total": 0}, "error"
+        log_msg = f"API Request Failed: {model_id}"
+        t.log("ERROR", log_msg, error=e)
+        return (
+            f"ERROR: {str(e)}",
+            {"prompt": 0, "completion": 0, "total": 0},
+            "error",
+        )
 
 
 def mistral_api_call(client, model_id, temperature, max_tokens, prompt):
@@ -134,9 +145,13 @@ def mistral_api_call(client, model_id, temperature, max_tokens, prompt):
             )
         return content, used_tokens, finish_reason
     except Exception as e:
-        error_msg = format_error(model_id, e)
-        t.log("ERROR", error_msg)
-        return f"ERROR: {str(e)}", {"prompt": 0, "completion": 0, "total": 0}, "error"
+        log_msg = f"API Request Failed: {model_id}"
+        t.log("ERROR", log_msg, error=e)
+        return (
+            f"ERROR: {str(e)}",
+            {"prompt": 0, "completion": 0, "total": 0},
+            "error",
+        )
 
 
 def meta_api_call(client, model_id, temperature, max_tokens, prompt):
@@ -151,7 +166,7 @@ def meta_api_call(client, model_id, temperature, max_tokens, prompt):
                 {"role": "user", "content": prompt},
             ],
             temperature=temperature,
-            max_tokens=max_tokens,
+            max_completion_tokens=max_tokens,
         )
 
         # Extracting data
@@ -171,17 +186,19 @@ def meta_api_call(client, model_id, temperature, max_tokens, prompt):
 
         return content, used_tokens, finish_reason
     except Exception as e:
-        error_msg = format_error(model_id, e)
-        t.log("ERROR", error_msg)
-        return f"ERROR: {str(e)}", {"prompt": 0, "completion": 0, "total": 0}, "error"
+        log_msg = f"API Request Failed: {model_id}"
+        t.log("ERROR", log_msg, error=e)
+        return (
+            f"ERROR: {str(e)}",
+            {"prompt": 0, "completion": 0, "total": 0},
+            "error",
+        )
 
 
 def get_clients():
     return {
+        "meta": Groq(api_key=LLMConfig.META_KEY),  # Native Groq client
         "gemini": genai.Client(api_key=LLMConfig.GEMINI_KEY),
         "anthropic": anthropic.Anthropic(api_key=LLMConfig.ANTHROPIC_KEY),
         "mistral": Mistral(api_key=LLMConfig.MISTRAL_KEY),
-        "meta": openai.OpenAI(
-            api_key=LLMConfig.META_KEY, base_url="https://api.groq.com/openai/v1"
-        ),
     }

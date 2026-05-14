@@ -76,7 +76,9 @@ def validate_integrity(
         for reason, files in current_drifts.items():
             # Create a vertical bulleted list for each drift type
             file_list = "\n   • ".join(files)
-            error_content += f"\n[{S.ERROR}]{reason}:[/]\n   • {file_list}\n"
+            error_content += (
+                f"\n[{S.ERROR}]{reason}:[/]\n   • [{S.FILE}]{file_list}[/]\n"
+            )
 
         t.print(
             Panel(

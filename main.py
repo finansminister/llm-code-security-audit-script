@@ -39,8 +39,7 @@ def environment_setup() -> tuple:
         print("Please install CodeQL or update your PATH variable.")
         sys.exit(1)
 
-    load_dotenv()
-    Directories.directories_check()
+    Directories.initialize_session_tree()
     return (LLMConfig.get_api_parameters(), get_clients(), start_hashes_metadata)
 
 
@@ -81,10 +80,10 @@ def orchestration(
     cwe_per_owasp(cwe_dict, "OWASP_2025_Mapping", session_jsonl_log_path.parent)
     # Api Call Functions
     api_call_funcs = {
+        "meta": meta_api_call,
         "gemini": gemini_api_call,
         "anthropic": anthropic_api_call,
         "mistral": mistral_api_call,
-        "meta": meta_api_call,
     }
 
     model_configs = LLMConfig.model_cfg(client, api_call_funcs)
@@ -92,6 +91,15 @@ def orchestration(
     stats = []
     for loop_index, model in enumerate(model_configs, start=1):
         t.rule("INFO", f"MODEL {loop_index}/{len(model_configs)}: {model['id']}")
+        sarif_path = Directories.RESULTS_DIR / f"{model['name']}_analysis_report.sarif"
+        if sarif_path.exists():
+            t.log(
+                "INFO",
+                "Skipping CodeQL: Report already exists for {}",
+                target=model["name"],
+            )
+            continue
+
         output_manifest = code_generation_pipeline(
             model, api_parameters, session_jsonl_log_path, test_limit=test_limit
         )
@@ -133,9 +141,59 @@ def orchestration(
         run_statistics(stats, final_audit_results_path)
 
 
+def terminal_output():
+    tee = Tee(session_terminal_output)
+
+    original_stdout = sys.stdout
+    original_stderr = sys.stderr
+    sys.stdout = tee
+    sys.stderr = tee
+    t.rule("INFO", f"{'TEST RUN ACTIVE' if TEST_MODE else 'FULL AUDIT START'}")
+    t.print(f"Sample Size: {LIMIT if TEST_MODE else '121'} prompts per model")
+
+    if Directories.MASTER_HASH_PATH.exists():
+        with open(Directories.MASTER_HASH_PATH, "r") as file:
+            master = json.load(file)
+
+        baseline_info = [
+            f"[{S.INFO}]Baseline Date:[/] {master.get('date', 'Unknown')}\n"
+        ]
+        for filename, full_hash in master.items():
+            if filename != "date":
+                baseline_info.append(
+                    f"[{S.FILE}]{filename:<{f_pad}}[/] | [white]{full_hash[:24]}[/]"
+                )
+        t.print(
+            Panel(
+                "\n".join(baseline_info),
+                title=f"[{S.INFO}]Master Integrity Baseline",
+                border_style=f"{S.INFO}",
+                padding=(1, 2),
+            )
+        )
+    try:
+        orchestration(
+            session_jsonl_log_path, final_audit_results_path, test_limit=LIMIT
+        )
+    finally:
+        sys.stdout = original_stdout
+        sys.stderr = original_stderr
+        t.console.file = sys.stdout  # Reset Rich console
+        tee.close()
+        t.log(
+            "INFO",
+            "Session Complete. Log saved to",
+            file_path=session_terminal_output,
+        )
+
+
 if __name__ == "__main__":
     TEST_MODE = True
+    DEBUG_MODE = False
     LIMIT = 5 if TEST_MODE else None
+
+    load_dotenv()
+    Directories.directories_check_root()
 
     if (legacy_session_id := resume_session(Directories.PARENT_OUTPUT_DIR)) is not None:
         Directories.rebase_session(legacy_session_id)
@@ -150,57 +208,13 @@ if __name__ == "__main__":
 
     width = UIConfig.WIDTH
     f_pad = UIConfig.FILE_PATH_TRUNCATE
+
     try:
         wakelock = keep.running()
-    except Exception:
+    except Exception as e:
         wakelock = nullcontext()
-        t.log("ERROR", "Wakepy ignored")
+        t.log("ERROR", "Wakepy ignored", error=e)
 
     with wakelock:
-        tee = Tee(session_terminal_output)
-
-        original_stdout = sys.stdout
-        original_stderr = sys.stderr
-        sys.stdout = tee
-        sys.stderr = tee
-
-        t.rule("INFO", f"{'TEST RUN ACTIVE' if TEST_MODE else 'FULL AUDIT START'}")
-        t.print(f"Sample Size: {LIMIT if TEST_MODE else '121'} prompts per model")
-
-        if Directories.MASTER_HASH_PATH.exists():
-            with open(Directories.MASTER_HASH_PATH, "r") as file:
-                master = json.load(file)
-
-            baseline_info = [
-                f"[{S.INFO}]Baseline Date:[/] {master.get('date', 'Unknown')}\n"
-            ]
-            for filename, full_hash in master.items():
-                if filename != "date":
-                    baseline_info.append(
-                        f"[{S.FILE}]{filename:<{f_pad}}[/] | [white]{full_hash[:24]}[/]"
-                    )
-
-            t.print(
-                Panel(
-                    "\n".join(baseline_info),
-                    title=f"[{S.INFO}]Master Integrity Baseline",
-                    border_style=f"{S.INFO}",
-                    padding=(1, 2),
-                )
-            )
-        try:
-            orchestration(
-                session_jsonl_log_path, final_audit_results_path, test_limit=LIMIT
-            )
-        finally:
-            sys.stdout = original_stdout
-            sys.stderr = original_stderr
-            t.console.file = sys.stdout  # Reset Rich console
-            tee.close()
-            t.log(
-                "INFO",
-                "Session Complete. Log saved to",
-                file_path=session_terminal_output,
-            )
-
+        terminal_output()
         sys.exit(0)
