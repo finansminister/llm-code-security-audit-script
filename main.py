@@ -1,7 +1,8 @@
+import contextlib
 import json
+import os
 import shutil
 import sys
-from contextlib import nullcontext
 from pathlib import Path
 from typing import Any, Optional
 
@@ -147,7 +148,6 @@ def orchestration(
 
 def terminal_output(TEST_MODE: bool, LIMIT=None):
     tee = Tee(session_terminal_output)
-
     original_stdout = sys.stdout
     original_stderr = sys.stderr
     sys.stdout = tee
@@ -212,13 +212,13 @@ if __name__ == "__main__":
 
     width = UIConfig.WIDTH
     f_pad = UIConfig.FILE_PATH_TRUNCATE
+    with contextlib.redirect_stderr(open(os.devnull, "w")):
+        try:
+            if not (wakelock := keep.running()):
+                wakelock = contextlib.nullcontext()
+        except Exception:
+            wakelock = contextlib.nullcontext()
 
-    try:
-        wakelock = keep.running()
-    except Exception as e:
-        wakelock = nullcontext()
-        t.log("ERROR", "Wakepy ignored", error=e)
-
-    with wakelock:
-        terminal_output(TEST_MODE, LIMIT)
-        sys.exit(0)
+        with wakelock:
+            terminal_output(TEST_MODE, LIMIT)
+            sys.exit(0)
