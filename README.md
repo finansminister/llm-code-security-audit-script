@@ -135,10 +135,9 @@ Powered by the `Rich` library, the framework provides a professional CLI experie
 
 ### Usage
 
-To begin a full audit run (121 prompts per model):
-
-  ```bash
-  python3 main.py
+* To begin a full audit run (121 prompts per model):
+    ```bash
+    python3 main.py
 
 
 To run a quick diagnostic test, set `TEST_MODE = True` in `main.py` to trigger a limited 5-prompt sample.
