@@ -130,9 +130,7 @@ Powered by the `Rich` library, the framework provides a professional CLI experie
 
 2. **Environment**: Create a `.env` file with your API keys (Anthropic, Gemini, Mistral, and OpenRouter).
 3. **Baseline**: Freeze your source code baseline to enable integrity checks:
-4.
-  ```bash
-  python freeze_hashes.py
+4. `python freeze_hashes.py`
     
 
 ### Usage
