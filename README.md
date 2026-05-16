@@ -64,7 +64,7 @@ Powered by the `Rich` library, the framework provides a professional CLI experie
    cd llm-code-security-audit-script
    pip install -r requirements.txt
 
-2. **Environment**: Create a `.env` file with your API keys (Anthropic, Gemini, Mistral, and OpenRouter).
+2. **Environment**: Create a `.env` file with your API keys (Anthropic, Gemini, Mistral, and Meta).
 3. **Baseline**: Freeze your source code baseline to enable integrity checks:
 4. `python freeze_hashes.py`
     
