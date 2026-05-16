@@ -78,7 +78,7 @@ def main_api_call(
                 delay = (initial_delay * (2**attempt)) + random.uniform(0, 1)
                 t.log(
                     "RETRY",
-                    f"[{http_error}][/] {model_id:<25} | Busy. Retrying in {delay:.1f}s... ({attempt + 1}/{max_retries})",
+                    f"[[{http_error}]] {model_id:<25} | Busy. Retrying in {delay:.1f}s... ({attempt + 1}/{max_retries})",
                 )
                 time.sleep(delay)
             else:
