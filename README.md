@@ -124,8 +124,8 @@ Powered by the `Rich` library, the framework provides a professional CLI experie
 ### Installation
 1. **Clone & Install**:
    ```bash
-   git clone [https://github.com/finansminister/bachelors-thesis-project.git](https://github.com/finansminister/bachelors-thesis-project.git)
-   cd bachelors-thesis-project
+   git clone https://github.com/finansminister/llm-code-security-audit-script.git
+   cd llm-code-security-audit-script
    pip install -r requirements.txt
 
 2. **Environment**: Create a `.env` file with your API keys (Anthropic, Gemini, Mistral, and OpenRouter).
