@@ -1,6 +1,7 @@
 import json
 import random
 import re
+import sys
 import time
 from collections import Counter
 from pathlib import Path
@@ -27,12 +28,18 @@ def owasp_scrape(a_code: str, url: str, max_retries: int) -> Optional[str]:
         ):
             if attempt < max_retries:
                 delay = (2**attempt) + random.uniform(0, 1)
+                t.log(
+                    "RETRY",
+                    f"Failed to retrieve {a_code}. Retrying in {delay:.1f}s... ({attempt + 1}/{max_retries})",
+                )
                 time.sleep(delay)
             else:
                 t.log(
                     "EMPTY",
-                    f"Failed to retrieve {a_code} after {max_retries} attempts...",
+                    f"Failed to retrieve {a_code} after {max_retries} attempts.",
                 )
+                t.log("ERROR", "Terminating session due to missing CWE dictionary.")
+                sys.exit(1)
     return None
 
 
