@@ -151,9 +151,7 @@ def audit_stats(
         t.log("ERROR", f"Audit file: {csv_audit_file} not found...", error=e)
         return None
 
-    metrics = calculate_group_stats
-
-    stat_summary = df.groupby("model").apply(metrics)
+    stat_summary = df.groupby("model").apply(calculate_group_stats)
 
     try:
         save_atomically(stat_summary, stat_summary_report_path)
