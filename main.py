@@ -51,7 +51,7 @@ def resume_session(session_log_dir: Path) -> Optional[str]:
         [dir for dir in session_log_dir.iterdir() if dir.is_dir()],
         key=lambda x: x.stat().st_mtime,
         reverse=True,
-    )[:5]
+    )
 
     if not sessions:
         return None
