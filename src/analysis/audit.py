@@ -155,11 +155,9 @@ def audit_stats(
 
     try:
         save_atomically(stat_summary, stat_summary_report_path)
-        t.log("SUCCESS", f"Stat Summary saved safely: {stat_summary_report_path.name}")
+        t.log("SUCCESS", "Stat Summary saved:", file_path=stat_summary_report_path)
     except Exception as e:
         t.log("ERROR", "Atomic save failed", error=e)
-
-    t.log("SUCCESS", f"Stat Summary saved to: {stat_summary_report_path.name}")
 
     # rich.progress table to showcase stats, acts like an excel-like table structure
     table = Table(title="Final Security Audit Summary", header_style="bold magenta")
