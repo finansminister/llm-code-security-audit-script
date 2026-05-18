@@ -22,11 +22,12 @@ def _stat_panel(p_value: float, statistic: float, test_type: str, result_text: s
     t.print(
         Align.center(
             Panel(
-                f"Stats: [bold]{statistic:.4f}[/]\n"
+                f"Stats: {statistic:.4f}\n"
                 f"p-value: [{style}]{p_value:.4f}[/]\n\n"
                 f"[{style}]{result_text}[/]",
                 title=f"[{S.INFO}]{test_type}",
-                border_style=f"[{S.INFO}]",
+                border_style=f"{S.INFO}",
+                style=f"{S.INFO}",
                 expand=True,
                 padding=(1, 2),
             ),
