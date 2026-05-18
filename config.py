@@ -299,8 +299,8 @@ class LLMConfig:
     def model_cfg(cls, client, api_call):
         configs = []
         models = [
-            ("meta", cls.META_MODEL, Directories.META_DIR),
             ("gemini", cls.GEMINI_MODEL, Directories.GEMINI_DIR),
+            ("meta", cls.META_MODEL, Directories.META_DIR),
             ("anthropic", cls.ANTHROPIC_MODEL, Directories.ANTHROPIC_DIR),
             ("mistral", cls.MISTRAL_MODEL, Directories.MISTRAL_DIR),
         ]
