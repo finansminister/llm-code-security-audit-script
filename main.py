@@ -203,7 +203,7 @@ if __name__ == "__main__":
     if (legacy_session_id := resume_session(Directories.PARENT_OUTPUT_DIR)) is not None:
         Directories.rebase_session(legacy_session_id)
         resumed_session = True
-        active_session_id = legacy_session_id
+        active_session_id = legacy_session_id.replace("code-audit-", "")
     else:
         active_session_id = Directories.SESSION_ID
     session_log_dir = Directories.OUTPUT_DIR / "session-logs"
