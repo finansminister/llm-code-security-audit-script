@@ -4,10 +4,7 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from rich.align import Align
-from rich.panel import Panel
-
-from config import Directories, Styles, UIConfig
+from config import Directories, Styles
 from config import Telemetry as t
 
 S: Any = Styles
@@ -73,19 +70,9 @@ def validate_integrity(
         for reason, files in current_drifts.items():
             # Create a vertical bulleted list for each drift type
             file_list = "\n   • ".join(files)
-            error_content += (
-                f"\n[{S.ERROR}]{reason}:[/]\n   • [{S.FILE}]{file_list}[/]\n"
-            )
+            error_content += f"\n{reason}:\n   • {file_list}\n"
 
-        t.print(
-            Panel(
-                error_content,
-                title=f"[{S.ERROR}]CRITICAL INTEGRITY BREACH",
-                border_style="red",
-                expand=True,
-                padding=(1, 2),
-            )
-        )
+        t.center_panel(error_content, "INTEGRITY BREACH", "ERROR")
         sys.exit(1)
 
 

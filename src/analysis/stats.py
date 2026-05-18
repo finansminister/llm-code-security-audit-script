@@ -2,13 +2,14 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+from rich.align import Align
 from rich.panel import Panel
 from rich.table import Table
 from scipy import stats
 from scipy.stats import chi2_contingency, kruskal
 from statsmodels.stats.multicomp import pairwise_tukeyhsd
 
-from config import Directories, Styles
+from config import Directories, Styles, UIConfig
 from config import Telemetry as t
 
 from .audit import audit_stats
@@ -19,13 +20,17 @@ S: Any = Styles
 def _stat_panel(p_value: float, statistic: float, test_type: str, result_text: str):
     style = S.SIGNIFICANT if p_value < 0.05 else S.INSIGNIFICANT
     t.print(
-        Panel(
-            f"Stats: [bold]{statistic:.4f}[/]\n"
-            f"p-value: [{style}]{p_value:.4f}[/]\n\n"
-            f"[{style}]{result_text}[/]",
-            title=f"[{style}]{test_type}",
-            expand=False,
-        ),
+        Align.center(
+            Panel(
+                f"Stats: [bold]{statistic:.4f}[/]\n"
+                f"p-value: [{style}]{p_value:.4f}[/]\n\n"
+                f"[{style}]{result_text}[/]",
+                title=f"[{style}]{test_type}",
+                expand=True,
+                padding=(1, 2),
+            ),
+            width=UIConfig.WIDTH,
+        )
     )
 
 
