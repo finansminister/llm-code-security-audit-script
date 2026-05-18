@@ -145,8 +145,9 @@ def orchestration(
         run_statistics(stats, final_audit_results_path)
 
 
-def terminal_output(TEST_MODE: bool, LIMIT=None):
-    tee = Tee(session_terminal_output)
+def terminal_output(TEST_MODE: bool, LIMIT=None, append_mode: bool = False):
+    file_mode = "a" if append_mode else "w"
+    tee = Tee(session_terminal_output, mode=file_mode)
     original_stdout = sys.stdout
     original_stderr = sys.stderr
     sys.stdout = tee
@@ -187,7 +188,7 @@ def terminal_output(TEST_MODE: bool, LIMIT=None):
         )
         sys.stdout = original_stdout
         sys.stderr = original_stderr
-        t.console.file = sys.stdout  # Reset Rich console
+        t.console.file = sys.stdout
         tee.close()
 
 
@@ -198,14 +199,18 @@ if __name__ == "__main__":
     load_dotenv()
     Directories.directories_check_root()
 
+    resumed_session = False
     if (legacy_session_id := resume_session(Directories.PARENT_OUTPUT_DIR)) is not None:
         Directories.rebase_session(legacy_session_id)
-
+        resumed_session = True
+        active_session_id = legacy_session_id
+    else:
+        active_session_id = Directories.SESSION_ID
     session_log_dir = Directories.OUTPUT_DIR / "session-logs"
     session_log_dir.mkdir(parents=True, exist_ok=True)
     session_jsonl_log_path = session_log_dir / "code_generation_log.jsonl"
     final_audit_results_path = (
-        Directories.RESULTS_DIR / f"final_audit_results_{Directories.SESSION_ID}.csv"
+        Directories.RESULTS_DIR / f"final_audit_results_{active_session_id}.csv"
     )
     session_terminal_output = session_log_dir / "session_terminal_output.txt"
 
@@ -219,5 +224,5 @@ if __name__ == "__main__":
             wakelock = contextlib.nullcontext()
 
         with wakelock:
-            terminal_output(TEST_MODE, LIMIT)
+            terminal_output(TEST_MODE, LIMIT, append_mode=resumed_session)
             sys.exit(0)

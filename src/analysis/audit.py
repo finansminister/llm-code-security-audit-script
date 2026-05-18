@@ -17,10 +17,10 @@ S: Any = Styles
 
 
 class Tee(io.TextIOBase):
-    def __init__(self, filename):
+    def __init__(self, filename, mode="w"):
         super().__init__()  # Initialize the base class
         self.terminal = sys.stdout
-        self.log = open(filename, "w", encoding="utf-8")
+        self.log = open(filename, mode, encoding="utf-8")
         self.ansi_escape = re.compile(r"\x1b\[\??[0-9;]*[mGJKHFlh]")
 
     def write(self, message):
