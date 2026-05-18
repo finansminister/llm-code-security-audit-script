@@ -25,7 +25,8 @@ def _stat_panel(p_value: float, statistic: float, test_type: str, result_text: s
                 f"Stats: [bold]{statistic:.4f}[/]\n"
                 f"p-value: [{style}]{p_value:.4f}[/]\n\n"
                 f"[{style}]{result_text}[/]",
-                title=f"[{style}]{test_type}",
+                title=f"[{S.INFO}]{test_type}",
+                border_style=f"[{S.INFO}]",
                 expand=True,
                 padding=(1, 2),
             ),

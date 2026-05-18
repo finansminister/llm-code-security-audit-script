@@ -7,10 +7,13 @@ from pathlib import Path
 from typing import Any, Optional
 
 import pandas as pd
+from rich.align import Align
 from rich.table import Table
 
-from config import Directories, UIConfig
+from config import Directories, Styles, UIConfig
 from config import Telemetry as t
+
+S: Any = Styles
 
 
 class Tee(io.TextIOBase):
@@ -161,8 +164,8 @@ def audit_stats(
 
     # rich.progress table to showcase stats, acts like an excel-like table structure
     table = Table(title="Final Security Audit Summary", header_style="bold magenta")
-    table.add_column("Model", style="cyan")
-    table.add_column("Vulnerability Rate (%)", justify="right", style="bold red")
+    table.add_column("Model", style=f"{S.FILE}")
+    table.add_column("Vulnerability Rate (%)", justify="right")
     table.add_column("Mean Severity", justify="right")
     for model, row in stat_summary.iterrows():
         rate = row["vulnerability_rate"]
@@ -176,5 +179,5 @@ def audit_stats(
             f"{severity:.2f}",
         )
     t.rule("INFO", "Stat Summary")
-    t.print(table)
+    t.print(Align.center(table))
     return stat_summary

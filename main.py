@@ -138,8 +138,6 @@ def orchestration(
 
     t.rule("SUCCESS", "ALL MODELS PROCESSED")
 
-    t.print(f"\n[{S.FILE}]Final System State Validation[/]")
-
     final_hashes_metadata = generate_hashes()
     end_of_process_integrity(final_hashes_metadata, start_hashes_metadata)
 
