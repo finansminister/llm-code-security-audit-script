@@ -124,13 +124,15 @@ def save_atomically(df: pd.DataFrame, file_path: Path):
 # helper function to fix .agg issues when using lambda functions to calculate values within the "table"
 def calculate_group_stats(group):
     total_alerts = len(group)
-    security_issue = group[group["security_issue"]]
+    security_issue = group[
+        group["security_issue"]
+    ]  # Security issue is a boolian tag i added to keep track of security alerts vs non-security alerts.
     mean_severity = (
         security_issue["security_severity"].mean() if not security_issue.empty else 0.0
     )
 
     # Count unique file_paths only where security_issue is True
-    vulnerable_files = group[group["security_issue"]]["file_path"].nunique()
+    vulnerable_files = security_issue["file_path"].nunique()
     total_unique_files = group["file_path"].nunique()
 
     vulnerability_rate = (
