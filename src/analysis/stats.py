@@ -19,6 +19,7 @@ S: Any = Styles
 
 def _stat_panel(p_value: float, statistic: float, test_type: str, result_text: str):
     style = S.SIGNIFICANT if p_value < 0.05 else S.INSIGNIFICANT
+    t.print("\n")
     t.print(
         Align.center(
             Panel(
@@ -34,6 +35,7 @@ def _stat_panel(p_value: float, statistic: float, test_type: str, result_text: s
             width=UIConfig.WIDTH,
         )
     )
+    t.print("\n")
 
 
 def chi_squared_test(stat_summary: pd.DataFrame):
@@ -157,7 +159,7 @@ def anova_test(csv_audit_file: Path):
         tukeys_hsd(cwe_tagged_files, Directories.RESULTS_DIR)
 
 
-def run_statistics(stats, final_audit_results):
+def run_statistics(stats, final_audit_results, code_generation_log):
     audit_dataframe = pd.DataFrame(stats)
     audit_dataframe.to_csv(final_audit_results, index=False)
 
@@ -165,7 +167,9 @@ def run_statistics(stats, final_audit_results):
     t.rule("INFO", "STATISTICAL AUDIT")
 
     stat_summary_path = Directories.RESULTS_DIR / f"summary_{final_audit_results.name}"
-    summary_dataframe = audit_stats(final_audit_results, stat_summary_path)
+    summary_dataframe = audit_stats(
+        final_audit_results, stat_summary_path, code_generation_log
+    )
 
     if summary_dataframe is not None:
         chi_squared_test(summary_dataframe)

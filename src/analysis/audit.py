@@ -8,9 +8,10 @@ from typing import Any, Optional
 
 import pandas as pd
 from rich.align import Align
+from rich.columns import Columns
 from rich.table import Table
 
-from config import Directories, Styles, UIConfig
+from config import Directories, LLMConfig, Styles, UIConfig
 from config import Telemetry as t
 
 S: Any = Styles
@@ -66,7 +67,7 @@ def log_attempt(
 
     duration = time.perf_counter() - kwargs.get("start_time", time.perf_counter())
     log_entry = {
-        "timestamp": Directories.SESSION_ID_READABLE,
+        "session_id": Directories.SESSION_ID_READABLE,
         "status": status,
         "prompt_id": cwe_id,
         "model": model,
@@ -139,6 +140,8 @@ def calculate_group_stats(group):
         (vulnerable_files / total_unique_files * 100) if total_unique_files > 0 else 0
     )
 
+    mean_latency = group["latency_s"].mean() if "latency_s" in group.columns else 0.0
+
     return pd.Series(
         {
             "total_alerts": total_alerts,
@@ -146,18 +149,46 @@ def calculate_group_stats(group):
             "vulnerable_files": vulnerable_files,
             "total_unique_files": total_unique_files,
             "vulnerability_rate": vulnerability_rate,
+            "mean_latency": mean_latency,
         }
     )
 
 
 def audit_stats(
-    csv_audit_file: Path, stat_summary_report_path: Path
+    csv_audit_file: Path,
+    stat_summary_report_path: Path,
+    jsonl_log_file: Path,
 ) -> Optional[pd.DataFrame]:
     try:
         df = pd.read_csv(csv_audit_file)
     except FileNotFoundError as e:
         t.log("ERROR", f"Audit file: {csv_audit_file} not found...", error=e)
         return None
+
+    try:
+        jsonl_df = pd.read_json(jsonl_log_file, lines=True)
+    except FileNotFoundError as e:
+        t.log(
+            "ERROR", f"Code generation log file: {jsonl_log_file} not found...", error=e
+        )
+        return None
+
+    model_name_map = {
+        f"{LLMConfig.ANTHROPIC_MODEL}": "anthropic",
+        f"{LLMConfig.GEMINI_MODEL}": "gemini",
+        f"{LLMConfig.MISTRAL_MODEL}": "mistral",
+        f"{LLMConfig.META_MODEL}": "meta",
+    }
+
+    jsonl_df["mapped_model"] = jsonl_df["model"].replace(model_name_map)
+    grouped_df: Any = jsonl_df.groupby("mapped_model", as_index=True).mean(
+        numeric_only=True
+    )
+
+    latency_series = grouped_df["latency_s"]
+    latency_dict = latency_series.to_dict()
+
+    df["latency_s"] = df["model"].map(latency_dict)
 
     stat_summary = df.groupby("model").apply(calculate_group_stats)
 
@@ -168,13 +199,21 @@ def audit_stats(
         t.log("ERROR", "Atomic save failed", error=e)
 
     # rich.progress table to showcase stats, acts like an excel-like table structure
-    table = Table(title="Final Security Audit Summary", header_style="bold magenta")
+    table = Table(
+        title="Final Security Audit Summary",
+        caption=f"Session ID: {Directories.SESSION_ID_READABLE}",
+        header_style="bold magenta",
+        title_justify="center",
+        caption_justify="center",
+    )
     table.add_column("Model", style=f"{S.FILE}")
-    table.add_column("Vulnerability Rate (%)", justify="right")
+    table.add_column("Vulnerability Rate", justify="right")
     table.add_column("Mean Severity", justify="right")
+    table.add_column("Mean Latency", justify="right")
     for model, row in stat_summary.iterrows():
         rate = row["vulnerability_rate"]
         severity = row["mean_severity"]
+        latency = row["mean_latency"]
         rate_style = (
             "bold red" if rate > 20 else "bold yellow" if rate > 10 else "bold green"
         )
@@ -182,7 +221,11 @@ def audit_stats(
             str(model),
             f"[{rate_style}]{rate:.2f}%",
             f"{severity:.2f}",
+            f"{latency:.2f}",
         )
     t.rule("INFO", "Stat Summary")
-    t.print(Align.center(table))
+    t.print("\n")
+    centered_table = Columns([table], align="center", expand=False)
+    t.print(Align.center(centered_table))
+    t.print("\n")
     return stat_summary

@@ -142,7 +142,7 @@ def orchestration(
     end_of_process_integrity(final_hashes_metadata, start_hashes_metadata)
 
     if stats:
-        run_statistics(stats, final_audit_results_path)
+        run_statistics(stats, final_audit_results_path, session_jsonl_log_path)
 
 
 def terminal_output(TEST_MODE: bool, LIMIT=None, append_mode: bool = False):
